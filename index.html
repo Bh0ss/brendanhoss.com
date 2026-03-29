@@ -434,7 +434,7 @@ canvas#particles {
   gap: 20px;
   flex-wrap: wrap;
   justify-content: center;
-  margin-bottom: 64px;
+  margin-bottom: 48px;
 }
 
 .contact-pill {
@@ -458,6 +458,64 @@ canvas#particles {
 }
 .contact-pill svg {
   width: 18px; height: 18px;
+}
+
+.contact-form {
+  max-width: 480px;
+  margin: 0 auto 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: left;
+}
+.contact-form input,
+.contact-form textarea {
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  transition: border-color 0.3s, background 0.3s;
+  outline: none;
+}
+.contact-form input:focus,
+.contact-form textarea:focus {
+  border-color: var(--blue);
+  background: rgba(255, 255, 255, 0.06);
+}
+.contact-form input::placeholder,
+.contact-form textarea::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+.contact-form textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+.contact-form button {
+  padding: 14px 32px;
+  border-radius: 980px;
+  border: none;
+  background: var(--blue);
+  color: white;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.3s;
+  align-self: center;
+}
+.contact-form button:hover {
+  background: #2563eb;
+  transform: scale(1.02);
+}
+.contact-form .form-success {
+  text-align: center;
+  color: var(--green);
+  font-size: 16px;
+  padding: 24px;
 }
 
 .closing-name {
@@ -798,20 +856,41 @@ footer {
   <div class="scene-inner" style="text-align:center;">
     <p class="cin-large sr" style="margin-bottom:48px;">Let's build something.</p>
 
-    <div class="contact-row sr sr-d2">
-      <a href="mailto:hossbrendan@gmail.com" class="contact-pill">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-        hossbrendan@gmail.com
-      </a>
-      <a href="tel:2033143162" class="contact-pill">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
-        203.314.3162
-      </a>
+    <form class="contact-form sr sr-d2" id="contact-form" action="https://formspree.io/f/xpwzgkvq" method="POST">
+      <input type="text" name="name" placeholder="Your name" required>
+      <input type="email" name="email" placeholder="Your email" required>
+      <textarea name="message" placeholder="What's on your mind?" required></textarea>
+      <button type="submit">Send Message</button>
+    </form>
+
+    <div class="contact-row sr sr-d3">
       <a href="https://linkedin.com/in/brendan-hoss" target="_blank" class="contact-pill">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
         LinkedIn
       </a>
     </div>
+
+    <script>
+    document.getElementById('contact-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const form = this;
+      const btn = form.querySelector('button');
+      btn.textContent = 'Sending...';
+      btn.disabled = true;
+      try {
+        const res = await fetch(form.action, { method: 'POST', body: new FormData(form), headers: { 'Accept': 'application/json' } });
+        if (res.ok) {
+          form.innerHTML = '<div class="form-success">Message sent. I\'ll be in touch.</div>';
+        } else {
+          btn.textContent = 'Failed — try again';
+          btn.disabled = false;
+        }
+      } catch(err) {
+        btn.textContent = 'Failed — try again';
+        btn.disabled = false;
+      }
+    });
+    </script>
 
     <div class="sr sr-d4 closing-name"><span class="name-glow">Brendan Hoss</span></div>
   </div>
