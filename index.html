@@ -12,17 +12,13 @@
 :root {
   --bg: #0a0a0f;
   --text: #f0f0f5;
-  --text-dim: #8888a0;
+  --text-dim: #a0a0b8;
   --blue: #4a9eff;
   --green: #00d4aa;
   --clinical: #6bb8ff;
   --amber: #ffb347;
-  --purple: #7c3aed;
-  --deep-blue: #2563eb;
-}
-
-html {
-  scroll-behavior: smooth;
+  --purple: #a78bfa;
+  --deep-blue: #60a5fa;
 }
 
 body {
@@ -32,107 +28,125 @@ body {
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  height: 800vh;
 }
 
-canvas#particles {
+canvas#network {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  z-index: 0;
+}
+
+/* Scroll progress indicator */
+#scroll-progress {
+  position: fixed;
+  top: 0; right: 0;
+  width: 2px;
+  height: 0%;
+  z-index: 1000;
+  transition: background 0.6s;
+  pointer-events: none;
+}
+
+/* Text overlay system */
+.overlay {
   position: fixed;
   top: 0; left: 0;
   width: 100%; height: 100%;
-  z-index: 0;
-  pointer-events: none;
-}
-
-.scene {
-  position: relative;
-  z-index: 1;
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 80px 24px;
-  overflow: hidden;
-}
-
-.scene-inner {
-  max-width: 900px;
-  margin: 0 auto;
-  width: 100%;
-}
-
-/* ── Parallax layers ── */
-.parallax-bg {
-  position: absolute;
-  top: -20%; left: -10%;
-  width: 120%; height: 140%;
-  z-index: -1;
+  align-items: center;
   pointer-events: none;
-  will-change: transform;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.1s linear;
+  padding: 24px;
+  text-align: center;
 }
 
-/* ── Cinematic text ── */
-.cin-large {
-  font-size: clamp(32px, 5vw, 64px);
+.overlay.active { opacity: 1; }
+.overlay.active .contact-form,
+.overlay.active .contact-row,
+.overlay.active .contact-pill {
+  pointer-events: auto;
+}
+.overlay.active button { pointer-events: auto; }
+
+.overlay-line {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.overlay-line.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Typography */
+.t-tagline {
+  font-size: clamp(22px, 3.5vw, 42px);
   font-weight: 300;
   letter-spacing: -0.02em;
-  line-height: 1.2;
+  line-height: 1.3;
+  max-width: 700px;
+  color: var(--text);
 }
 
-.cin-hero {
+.t-hero {
   font-size: clamp(48px, 8vw, 120px);
   font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 1.0;
 }
 
-.cin-narrative {
-  font-size: clamp(18px, 2.2vw, 22px);
+.t-section {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: clamp(11px, 1.2vw, 14px);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 20px;
+}
+
+.t-heading {
+  font-size: clamp(28px, 5vw, 56px);
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.t-narrative {
+  font-size: clamp(16px, 2vw, 20px);
   font-weight: 400;
-  line-height: 1.6;
+  line-height: 1.7;
   max-width: 600px;
   color: var(--text-dim);
 }
 
-.cin-mono {
+.t-mono {
   font-family: 'JetBrains Mono', monospace;
-  font-size: clamp(13px, 1.5vw, 16px);
-  font-weight: 400;
+  font-size: clamp(12px, 1.4vw, 15px);
   color: var(--text-dim);
   letter-spacing: 0.02em;
 }
 
-/* ── Scroll reveal system ── */
-.sr {
-  opacity: 0;
-  transform: translateY(40px);
-  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.sr.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-.sr-d1 { transition-delay: 0.15s; }
-.sr-d2 { transition-delay: 0.30s; }
-.sr-d3 { transition-delay: 0.45s; }
-.sr-d4 { transition-delay: 0.60s; }
-.sr-d5 { transition-delay: 0.75s; }
-.sr-d6 { transition-delay: 0.90s; }
-.sr-d7 { transition-delay: 1.05s; }
-.sr-d8 { transition-delay: 1.20s; }
-
-/* ── OPENING — THE HOOK ── */
-#opening {
-  min-height: 100vh;
-  text-align: center;
-  align-items: center;
+.t-stat-num {
+  font-size: clamp(48px, 8vw, 80px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, var(--purple), var(--deep-blue));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-#opening .tagline {
-  margin-bottom: 24px;
-}
-
-#opening .subtitle {
-  margin-bottom: 64px;
+.t-stat-label {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-top: 4px;
 }
 
 .name-glow {
@@ -149,85 +163,82 @@ canvas#particles {
   z-index: -1;
 }
 
-/* ── ACT BACKGROUNDS ── */
-#act1 { background: linear-gradient(180deg, var(--bg) 0%, #0a0f1a 50%, var(--bg) 100%); }
-#act2 { background: linear-gradient(180deg, var(--bg) 0%, #100f18 50%, var(--bg) 100%); }
-#act3 { background: linear-gradient(180deg, var(--bg) 0%, #060f12 50%, var(--bg) 100%); }
-#act4 { background: linear-gradient(180deg, var(--bg) 0%, #f8fafc 15%, #f0f4f8 85%, var(--bg) 100%); }
-#act4 .cin-narrative, #act4 .cin-mono { color: #555e6e; }
-#act4 .cin-large { color: #1a2332; }
-#act4 .act-label { color: var(--clinical); }
-#act5 { background: linear-gradient(180deg, var(--bg) 0%, #1a150e 50%, var(--bg) 100%); }
-#act6 { background: linear-gradient(180deg, var(--bg) 0%, #0d0a1a 30%, #0a0e1a 70%, var(--bg) 100%); }
-#act7 { background: var(--bg); }
-#closing { background: var(--bg); text-align: center; align-items: center; }
-
-/* ── ACT labels ── */
-.act-label {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+/* Scroll hint */
+.scroll-hint {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  transition: opacity 0.6s;
+}
+.scroll-hint.hidden { opacity: 0; pointer-events: none; }
+.scroll-hint span {
+  font-size: 12px;
   font-weight: 500;
-  text-transform: uppercase;
   letter-spacing: 0.15em;
-  margin-bottom: 32px;
-  opacity: 0.5;
+  text-transform: uppercase;
+  color: var(--text-dim);
 }
-#act1 .act-label { color: var(--blue); }
-#act2 .act-label { color: var(--blue); }
-#act3 .act-label { color: var(--green); }
-#act5 .act-label { color: var(--amber); }
-#act6 .act-label { color: var(--purple); }
-#act7 .act-label { color: var(--text-dim); }
-
-/* ── Constellation / Network viz (Act 1) ── */
-.constellation {
-  position: relative;
-  height: 200px;
-  margin-top: 48px;
-}
-.constellation canvas {
-  width: 100%;
-  height: 100%;
-}
-
-/* ── Floating cards (Act 3) ── */
-.float-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(0, 212, 170, 0.15);
+.scroll-mouse {
+  width: 24px;
+  height: 40px;
+  border: 2px solid var(--text-dim);
   border-radius: 12px;
-  padding: 24px 28px;
-  margin: 16px 0;
-  font-size: clamp(15px, 1.8vw, 17px);
-  line-height: 1.5;
+  position: relative;
+}
+.scroll-mouse::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--text-dim);
+  animation: scrollPulse 1.8s ease-in-out infinite;
+}
+@keyframes scrollPulse {
+  0% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(16px); }
+}
+
+/* Stats grid within overlay */
+.stats-row {
+  display: flex;
+  gap: clamp(24px, 4vw, 64px);
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 24px 0;
+}
+
+.stat-item { text-align: center; }
+
+/* Achievement list */
+.achieve-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 600px;
+}
+
+.achieve-item {
+  font-size: clamp(14px, 1.6vw, 17px);
   color: var(--text);
-  backdrop-filter: blur(8px);
-  transition: border-color 0.3s, transform 0.3s;
-}
-.float-card:hover {
-  border-color: rgba(0, 212, 170, 0.35);
-  transform: translateX(8px);
-}
-
-/* ── Act 4 — Clinical feel ── */
-#act4 .float-card {
-  background: rgba(0, 0, 0, 0.02);
-  border-color: rgba(107, 184, 255, 0.2);
-  color: #2a3444;
-}
-#act4 .float-card:hover {
-  border-color: rgba(107, 184, 255, 0.4);
+  padding: 12px 20px;
+  background: rgba(124, 58, 237, 0.06);
+  border-left: 2px solid rgba(124, 58, 237, 0.4);
+  border-radius: 0 8px 8px 0;
+  text-align: left;
 }
 
-/* ── Act 5 — Amber ── */
-#act5 .float-card {
-  border-color: rgba(255, 179, 71, 0.15);
-}
-#act5 .float-card:hover {
-  border-color: rgba(255, 179, 71, 0.35);
-}
-
-/* ── Act 6 — THE MAIN ACT ── */
-.act6-title {
+/* SE title gradient */
+.se-title {
   font-size: clamp(48px, 8vw, 96px);
   font-weight: 800;
   letter-spacing: -0.04em;
@@ -235,198 +246,67 @@ canvas#particles {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin-bottom: 48px;
 }
 
-/* Stats grid */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 32px;
-  margin: 48px 0 64px;
-}
-
-.stat-block {
-  text-align: center;
-  padding: 24px 16px;
-  border-radius: 16px;
-  background: rgba(124, 58, 237, 0.06);
-  border: 1px solid rgba(124, 58, 237, 0.12);
-  transition: border-color 0.3s;
-}
-.stat-block:hover {
-  border-color: rgba(124, 58, 237, 0.3);
-}
-
-.stat-num {
-  font-size: clamp(36px, 5vw, 56px);
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  background: linear-gradient(135deg, var(--purple), var(--deep-blue));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.stat-desc {
-  font-size: 13px;
-  color: var(--text-dim);
-  margin-top: 8px;
-  font-weight: 400;
-}
-
-/* Cinematic achievement cards */
-.achieve-card {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(124, 58, 237, 0.12);
-  border-radius: 16px;
-  padding: 28px 32px;
-  margin: 16px 0;
-  position: relative;
-  overflow: hidden;
-  transition: border-color 0.3s, transform 0.3s;
-}
-.achieve-card:hover {
-  border-color: rgba(124, 58, 237, 0.3);
-  transform: translateX(8px);
-}
-.achieve-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; bottom: 0;
-  width: 3px;
-  background: linear-gradient(180deg, var(--purple), var(--deep-blue));
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-.achieve-card:hover::before { opacity: 1; }
-
-.achieve-card h4 {
-  font-size: clamp(16px, 2vw, 20px);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  margin-bottom: 8px;
-}
-.achieve-card p {
-  font-size: 14px;
-  color: var(--text-dim);
-  line-height: 1.5;
-}
-
-/* Industry horizontal scroll */
-.industry-track {
+/* Contact form */
+.contact-form {
+  max-width: 420px;
+  width: 100%;
   display: flex;
-  gap: 16px;
-  margin: 48px 0;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  padding: 16px 0;
-  scrollbar-width: none;
-}
-.industry-track::-webkit-scrollbar { display: none; }
-
-.industry-tag {
-  flex-shrink: 0;
-  scroll-snap-align: start;
-  padding: 12px 28px;
-  border-radius: 980px;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  border: 1px solid rgba(124, 58, 237, 0.2);
-  background: rgba(124, 58, 237, 0.06);
-  color: var(--text);
-  white-space: nowrap;
-  transition: all 0.3s;
-}
-.industry-tag:hover {
-  background: rgba(124, 58, 237, 0.15);
-  border-color: rgba(124, 58, 237, 0.4);
-  transform: translateY(-2px);
+  flex-direction: column;
+  gap: 14px;
+  text-align: left;
+  margin: 0 auto;
 }
 
-/* ── ACT 7 — SKILLS ── */
-.skill-cluster {
-  margin: 48px 0;
-  padding: 32px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  transition: border-color 0.3s;
-}
-.skill-cluster:hover {
-  border-color: rgba(255, 255, 255, 0.12);
-}
-
-.skill-cluster-label {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  margin-bottom: 20px;
-}
-
-.skill-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.skill-badge {
-  padding: 8px 18px;
-  border-radius: 980px;
-  font-size: 13px;
-  font-weight: 500;
+.contact-form input,
+.contact-form textarea {
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  transition: all 0.3s;
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  transition: border-color 0.3s, background 0.3s;
+  outline: none;
 }
-.skill-badge:hover {
-  transform: translateY(-2px);
+.contact-form input:focus,
+.contact-form textarea:focus {
+  border-color: var(--blue);
+  background: rgba(255, 255, 255, 0.06);
 }
-
-/* Cluster color accents */
-.cluster-data .skill-cluster-label { color: var(--green); }
-.cluster-data .skill-badge {
-  border-color: rgba(0, 212, 170, 0.15);
+.contact-form input::placeholder,
+.contact-form textarea::placeholder {
+  color: rgba(255, 255, 255, 0.3);
 }
-.cluster-data .skill-badge:hover {
-  background: rgba(0, 212, 170, 0.1);
-  border-color: rgba(0, 212, 170, 0.3);
+.contact-form textarea {
+  min-height: 100px;
+  resize: vertical;
 }
-
-.cluster-auto .skill-cluster-label { color: var(--blue); }
-.cluster-auto .skill-badge {
-  border-color: rgba(74, 158, 255, 0.15);
+.contact-form button {
+  padding: 14px 32px;
+  border-radius: 980px;
+  border: none;
+  background: var(--blue);
+  color: white;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.3s;
+  align-self: center;
 }
-.cluster-auto .skill-badge:hover {
-  background: rgba(74, 158, 255, 0.1);
-  border-color: rgba(74, 158, 255, 0.3);
+.contact-form button:hover {
+  background: #2563eb;
+  transform: scale(1.02);
 }
-
-.cluster-delivery .skill-cluster-label { color: var(--purple); }
-.cluster-delivery .skill-badge {
-  border-color: rgba(124, 58, 237, 0.15);
-}
-.cluster-delivery .skill-badge:hover {
-  background: rgba(124, 58, 237, 0.1);
-  border-color: rgba(124, 58, 237, 0.3);
-}
-
-.cluster-platforms .skill-cluster-label { color: var(--amber); }
-.cluster-platforms .skill-badge {
-  border-color: rgba(255, 179, 71, 0.15);
-}
-.cluster-platforms .skill-badge:hover {
-  background: rgba(255, 179, 71, 0.1);
-  border-color: rgba(255, 179, 71, 0.3);
-}
-
-/* ── CLOSING ── */
-#closing .cin-large {
-  margin-bottom: 48px;
+.form-success {
+  text-align: center;
+  color: var(--green);
+  font-size: 16px;
+  padding: 24px;
 }
 
 .contact-row {
@@ -434,7 +314,7 @@ canvas#particles {
   gap: 20px;
   flex-wrap: wrap;
   justify-content: center;
-  margin-bottom: 48px;
+  margin: 20px 0;
 }
 
 .contact-pill {
@@ -460,64 +340,6 @@ canvas#particles {
   width: 18px; height: 18px;
 }
 
-.contact-form {
-  max-width: 480px;
-  margin: 0 auto 48px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  text-align: left;
-}
-.contact-form input,
-.contact-form textarea {
-  width: 100%;
-  padding: 14px 18px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text);
-  font-family: 'Inter', sans-serif;
-  font-size: 15px;
-  transition: border-color 0.3s, background 0.3s;
-  outline: none;
-}
-.contact-form input:focus,
-.contact-form textarea:focus {
-  border-color: var(--blue);
-  background: rgba(255, 255, 255, 0.06);
-}
-.contact-form input::placeholder,
-.contact-form textarea::placeholder {
-  color: rgba(255, 255, 255, 0.3);
-}
-.contact-form textarea {
-  min-height: 120px;
-  resize: vertical;
-}
-.contact-form button {
-  padding: 14px 32px;
-  border-radius: 980px;
-  border: none;
-  background: var(--blue);
-  color: white;
-  font-family: 'Inter', sans-serif;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.3s, transform 0.3s;
-  align-self: center;
-}
-.contact-form button:hover {
-  background: #2563eb;
-  transform: scale(1.02);
-}
-.contact-form .form-success {
-  text-align: center;
-  color: var(--green);
-  font-size: 16px;
-  padding: 24px;
-}
-
 .closing-name {
   font-size: clamp(36px, 6vw, 72px);
   font-weight: 800;
@@ -529,591 +351,725 @@ canvas#particles {
   50% { opacity: 1; }
 }
 
-.closing-name .name-glow::after {
-  animation: glowPulse 4s ease-in-out infinite;
-}
-@keyframes glowPulse {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
-}
-
 footer {
-  position: relative;
-  z-index: 1;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 10;
   text-align: center;
-  padding: 24px;
-  font-size: 12px;
+  padding: 12px;
+  font-size: 11px;
   color: #333;
-  border-top: 1px solid rgba(255,255,255,0.04);
-}
-
-/* ── Geometric grid (Act 1-2) ── */
-.geo-grid {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background-image:
-    linear-gradient(rgba(74, 158, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(74, 158, 255, 0.03) 1px, transparent 1px);
-  background-size: 60px 60px;
-  z-index: -1;
   pointer-events: none;
 }
 
-/* ── Code symbols float (Act 1) ── */
-.code-symbols {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  z-index: -1;
-  pointer-events: none;
-  overflow: hidden;
-}
-.code-symbols span {
-  position: absolute;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 14px;
-  color: rgba(74, 158, 255, 0.08);
-  animation: floatSymbol 20s linear infinite;
-  will-change: transform;
-}
-@keyframes floatSymbol {
-  0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { transform: translateY(-100px) rotate(180deg); opacity: 0; }
-}
-
-/* ── Spacer between scenes ── */
-.scene-spacer {
-  height: 20vh;
-  position: relative;
-  z-index: 1;
-}
-
-/* ── Mobile ── */
 @media (max-width: 768px) {
-  .scene { padding: 60px 20px; }
-  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .stats-row { gap: 20px; }
+  .achieve-list { gap: 8px; }
+  .achieve-item { font-size: 14px; padding: 10px 16px; }
   .contact-row { flex-direction: column; align-items: center; }
-  .skill-cluster { padding: 24px; }
-  .achieve-card { padding: 20px 24px; }
-  .industry-tag { padding: 10px 20px; font-size: 13px; }
-}
-
-@media (max-width: 480px) {
-  .stats-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
-  .stat-block { padding: 16px 12px; }
 }
 </style>
 </head>
 <body>
 
-<canvas id="particles"></canvas>
+<canvas id="network"></canvas>
+<div id="scroll-progress"></div>
 
-<!-- ════════════════════════════════════════════ -->
-<!-- OPENING — THE HOOK                          -->
-<!-- ════════════════════════════════════════════ -->
-<div class="scene" id="opening">
-  <div class="scene-inner" style="text-align:center;">
-    <p class="cin-large sr tagline" style="max-width:700px;margin:0 auto 24px;">Every solution starts with someone who sees what others don't.</p>
-    <p class="cin-narrative sr sr-d2 subtitle" style="margin:0 auto 64px;text-align:center;">This is the story of how I got here.</p>
-    <h1 class="cin-hero sr sr-d4"><span class="name-glow">Brendan Hoss</span></h1>
-  </div>
+<div class="scroll-hint" id="scroll-hint">
+  <span>Scroll to explore</span>
+  <div class="scroll-mouse"></div>
 </div>
 
-<div class="scene-spacer"></div>
-
-<!-- ════════════════════════════════════════════ -->
-<!-- ACT 1 — THE FOUNDATION                      -->
-<!-- ════════════════════════════════════════════ -->
-<div class="scene" id="act1">
-  <div class="geo-grid"></div>
-  <div class="code-symbols" id="codeSymbols1"></div>
-  <div class="scene-inner">
-    <div class="act-label sr">Act I</div>
-    <p class="cin-large sr sr-d1" style="margin-bottom:32px;">It started with curiosity.</p>
-    <p class="cin-narrative sr sr-d2" style="margin-bottom:16px;">Computer Science. Dean's List. Phi Theta Kappa.</p>
-    <p class="cin-mono sr sr-d3">Gateway Community College, 2014 - 2017</p>
-    <canvas class="constellation-canvas sr sr-d4" id="constellationCanvas" width="800" height="200" style="width:100%;height:200px;margin-top:48px;"></canvas>
-  </div>
+<!-- Phase 1: Origin (0-12%) -->
+<div class="overlay" data-enter="0.00" data-exit="0.07">
+  <p class="overlay-line t-tagline" data-line-enter="0.00">Every solution starts with someone who sees connections others don't.</p>
 </div>
 
-<div class="scene-spacer"></div>
-
-<!-- ════════════════════════════════════════════ -->
-<!-- ACT 2 — GOING DEEPER                        -->
-<!-- ════════════════════════════════════════════ -->
-<div class="scene" id="act2">
-  <div class="geo-grid"></div>
-  <div class="scene-inner">
-    <div class="act-label sr">Act II</div>
-    <p class="cin-large sr sr-d1" style="margin-bottom:32px;">85 credits into a Software Engineering degree at UConn.</p>
-    <p class="cin-narrative sr sr-d2" style="margin-bottom:16px;">Then a pivot — not away from tech, but toward something more practical.</p>
-    <p class="cin-mono sr sr-d3">University of Connecticut, 2018</p>
-  </div>
+<div class="overlay" data-enter="0.05" data-exit="0.12">
+  <h1 class="overlay-line t-hero" data-line-enter="0.06"><span class="name-glow">Brendan Hoss</span></h1>
 </div>
 
-<div class="scene-spacer"></div>
+<!-- Phase 2: Foundation (12-25%) — Gateway -->
+<div class="overlay" data-enter="0.12" data-exit="0.25">
+  <div class="overlay-line t-section" data-line-enter="0.12" style="color:var(--blue);">The Foundation</div>
+  <p class="overlay-line t-narrative" data-line-enter="0.14">Computer Science. Dean's List. Phi Theta Kappa.</p>
+  <p class="overlay-line t-mono" data-line-enter="0.16" style="margin-top:16px;">Gateway Community College, 2014 - 2017</p>
+</div>
 
-<!-- ════════════════════════════════════════════ -->
-<!-- ACT 3 — THE DATA CHAPTER                    -->
-<!-- ════════════════════════════════════════════ -->
-<div class="scene" id="act3">
-  <div class="scene-inner">
-    <div class="act-label sr">Act III</div>
-    <p class="cin-large sr sr-d1" style="margin-bottom:16px;">Lambda School. Data Science.</p>
-    <p class="cin-narrative sr sr-d2" style="margin-bottom:16px;">Python. TensorFlow. Neural networks.</p>
-    <p class="cin-mono sr sr-d3" style="margin-bottom:32px;">2019 - 2020</p>
+<!-- Phase 3: Growth (25-35%) — UConn -->
+<div class="overlay" data-enter="0.25" data-exit="0.35">
+  <div class="overlay-line t-section" data-line-enter="0.25" style="color:var(--blue);">Going Deeper</div>
+  <p class="overlay-line t-narrative" data-line-enter="0.27">85 credits into Software Engineering at UConn.</p>
+  <p class="overlay-line t-narrative" data-line-enter="0.29" style="margin-top:12px;">Then a pivot — not away from tech, but toward something more practical.</p>
+  <p class="overlay-line t-mono" data-line-enter="0.31" style="margin-top:16px;">University of Connecticut, 2018</p>
+</div>
 
-    <p class="cin-narrative sr sr-d3" style="margin-bottom:24px;color:var(--text);">Then the real test: <strong style="color:var(--green);">Story Squad.</strong></p>
+<!-- Phase 4: Data Chapter (35-48%) — Lambda + Story Squad -->
+<div class="overlay" data-enter="0.35" data-exit="0.41">
+  <div class="overlay-line t-section" data-line-enter="0.35" style="color:var(--green);">The Data Chapter</div>
+  <p class="overlay-line t-narrative" data-line-enter="0.36">Lambda School. Python. TensorFlow. Neural Networks.</p>
+</div>
 
-    <div class="float-card sr sr-d4">
-      Built an image clustering algorithm using Python, TensorFlow, and unsupervised learning — grouping user-submitted artwork into competitive tiers.
+<div class="overlay" data-enter="0.40" data-exit="0.48">
+  <div class="overlay-line t-section" data-line-enter="0.40" style="color:var(--green);">Story Squad</div>
+  <p class="overlay-line t-narrative" data-line-enter="0.41">Built an image clustering algorithm with unsupervised learning.</p>
+  <p class="overlay-line t-narrative" data-line-enter="0.43" style="margin-top:8px;">Trained a neural network for content moderation.</p>
+  <p class="overlay-line t-mono" data-line-enter="0.45" style="margin-top:16px;">Data Science Intern, 2021 - 2022</p>
+</div>
+
+<!-- Phase 5: Proving Ground (48-58%) — Yale -->
+<div class="overlay" data-enter="0.48" data-exit="0.58">
+  <div class="overlay-line t-section" data-line-enter="0.48" style="color:var(--clinical);">The Proving Ground</div>
+  <p class="overlay-line t-heading" data-line-enter="0.49" style="margin-bottom:16px;">100+ patients daily. Epic EMR. Zero margin for error.</p>
+  <p class="overlay-line t-narrative" data-line-enter="0.51">Yale University. Test Site Coordinator.</p>
+  <p class="overlay-line t-narrative" data-line-enter="0.53" style="margin-top:8px;">Leading through a pandemic taught what no classroom could.</p>
+  <p class="overlay-line t-mono" data-line-enter="0.55" style="margin-top:16px;">2021 - 2023</p>
+</div>
+
+<!-- Phase 6: Catalyst (58-68%) — Veoci Office Manager -->
+<div class="overlay" data-enter="0.58" data-exit="0.68">
+  <div class="overlay-line t-section" data-line-enter="0.58" style="color:var(--amber);">The Catalyst</div>
+  <p class="overlay-line t-narrative" data-line-enter="0.59">Joined Veoci as the person who fixes things.</p>
+  <p class="overlay-line t-narrative" data-line-enter="0.61" style="margin-top:8px;">Reduced equipment costs 20%. Eliminated 3 manual processes.</p>
+  <p class="overlay-line t-narrative" data-line-enter="0.63" style="margin-top:8px;">Then started building on the platform...</p>
+  <p class="overlay-line t-heading" data-line-enter="0.65" style="color:var(--amber);margin-top:16px;">...and realized: this is what I'm supposed to be doing.</p>
+  <p class="overlay-line t-mono" data-line-enter="0.66" style="margin-top:16px;">Office Manager & IT Coordinator, 2022 - 2024</p>
+</div>
+
+<!-- Phase 7: Main Event (68-88%) — Solutions Engineer -->
+<div class="overlay" data-enter="0.68" data-exit="0.75">
+  <div class="overlay-line se-title" data-line-enter="0.68">Solutions Engineer</div>
+  <p class="overlay-line t-mono" data-line-enter="0.70" style="margin-top:16px;">Veoci Inc. — 2024 - Present</p>
+</div>
+
+<div class="overlay" data-enter="0.74" data-exit="0.82">
+  <div class="stats-row">
+    <div class="stat-item overlay-line" data-line-enter="0.74">
+      <div class="t-stat-num" data-counter="15" data-suffix="+">0+</div>
+      <div class="t-stat-label">Custom Solutions</div>
     </div>
-    <div class="float-card sr sr-d5">
-      Trained and deployed a self-hosted neural network for content moderation, preprocessing images to detect and filter profane submissions.
+    <div class="stat-item overlay-line" data-line-enter="0.75">
+      <div class="t-stat-num" data-counter="30" data-suffix="+">0+</div>
+      <div class="t-stat-label">Client Demos</div>
     </div>
-    <p class="cin-mono sr sr-d6" style="margin-top:16px;">Story Squad — Data Science Intern, 2021 - 2022</p>
-  </div>
-</div>
-
-<div class="scene-spacer"></div>
-
-<!-- ════════════════════════════════════════════ -->
-<!-- ACT 4 — THE PROVING GROUND                  -->
-<!-- ════════════════════════════════════════════ -->
-<div class="scene" id="act4">
-  <div class="scene-inner">
-    <div class="act-label sr">Act IV</div>
-    <p class="cin-large sr sr-d1" style="margin-bottom:32px;">100+ patients daily. Epic EMR. Zero margin for error.</p>
-    <p class="cin-narrative sr sr-d2" style="margin-bottom:16px;">Yale University. Test Site Coordinator.</p>
-    <div class="float-card sr sr-d3">
-      Leading a team through a pandemic taught something no classroom could: how to stay calm when everything matters.
+    <div class="stat-item overlay-line" data-line-enter="0.76">
+      <div class="t-stat-num" data-counter="35" data-suffix="%">0%</div>
+      <div class="t-stat-label">Less Manual Entry</div>
     </div>
-    <p class="cin-mono sr sr-d4" style="margin-top:16px;">2021 - 2023</p>
-  </div>
-</div>
-
-<div class="scene-spacer"></div>
-
-<!-- ════════════════════════════════════════════ -->
-<!-- ACT 5 — FINDING THE PLATFORM                -->
-<!-- ════════════════════════════════════════════ -->
-<div class="scene" id="act5">
-  <div class="scene-inner">
-    <div class="act-label sr">Act V</div>
-    <p class="cin-large sr sr-d1" style="margin-bottom:24px;">Joined Veoci as the person who fixes things.</p>
-    <div class="float-card sr sr-d2">Reduced equipment costs 20%. Eliminated 3 manual processes.</div>
-    <p class="cin-narrative sr sr-d3" style="margin:24px 0;">Then started building solutions on the platform...</p>
-    <p class="cin-large sr sr-d4" style="color:var(--amber);">And realized: this is what I'm supposed to be doing.</p>
-    <p class="cin-mono sr sr-d5" style="margin-top:24px;">Veoci Inc. — Office Manager & IT Coordinator, 2022 - 2024</p>
-  </div>
-</div>
-
-<div class="scene-spacer"></div>
-
-<!-- ════════════════════════════════════════════ -->
-<!-- ACT 6 — THE SOLUTIONS ENGINEER (MAIN ACT)   -->
-<!-- ════════════════════════════════════════════ -->
-<div class="scene" id="act6" style="min-height:auto;padding-top:120px;padding-bottom:40px;">
-  <div class="scene-inner">
-    <div class="act-label sr">Act VI</div>
-    <div class="act6-title sr sr-d1">Solutions Engineer</div>
-    <p class="cin-mono sr sr-d2" style="margin-bottom:48px;">Veoci Inc. — 2024 - Present</p>
-  </div>
-</div>
-
-<div class="scene" id="act6-stats" style="min-height:auto;padding-top:0;padding-bottom:0;">
-  <div class="scene-inner">
-    <div class="stats-grid">
-      <div class="stat-block sr">
-        <div class="stat-num" data-target="15" data-suffix="+">0+</div>
-        <div class="stat-desc">Custom Solutions</div>
-      </div>
-      <div class="stat-block sr sr-d1">
-        <div class="stat-num" data-target="30" data-suffix="+">0+</div>
-        <div class="stat-desc">Client Demos</div>
-      </div>
-      <div class="stat-block sr sr-d2">
-        <div class="stat-num" data-target="35" data-suffix="%">0%</div>
-        <div class="stat-desc">Less Manual Entry</div>
-      </div>
-      <div class="stat-block sr sr-d3">
-        <div class="stat-num" data-target="6" data-suffix="">0</div>
-        <div class="stat-desc">Industry Verticals</div>
-      </div>
+    <div class="stat-item overlay-line" data-line-enter="0.77">
+      <div class="t-stat-num" data-counter="6" data-suffix="">0</div>
+      <div class="t-stat-label">Industry Verticals</div>
     </div>
   </div>
 </div>
 
-<div class="scene" id="act6-achievements" style="min-height:auto;padding-top:40px;padding-bottom:40px;">
-  <div class="scene-inner">
-    <div class="achieve-card sr">
-      <h4>Fortune 10 Onsite Engagement</h4>
-      <p>Conducted onsite technical engagement with a Fortune 10 technology company, performing discovery sessions and solution demonstrations to expand platform footprint.</p>
-    </div>
-    <div class="achieve-card sr sr-d1">
-      <h4>Created a Product That Opened a New Market Vertical</h4>
-      <p>Identified an unmet market need in higher education and built a turnkey Travel Registry solution that opened a new revenue stream.</p>
-    </div>
-    <div class="achieve-card sr sr-d2">
-      <h4>Built AI-Assisted Demo Environments</h4>
-      <p>Built reusable solution templates and demo environments leveraging AI-assisted tooling, shortening PoC cycles by ~2 weeks and accelerating pipeline progression.</p>
-    </div>
-    <div class="achieve-card sr sr-d3">
-      <h4>Utility-Sector Market Entry</h4>
-      <p>Developed custom utility-sector solutions tailored to industry-specific workflows, establishing Veoci's footprint in a previously untapped market vertical.</p>
-    </div>
-    <div class="achieve-card sr sr-d4">
-      <h4>Automation at Scale</h4>
-      <p>Architected end-to-end automated workflows using n8n — including webhooks, conditional logic, and API integrations — reducing average client manual data entry by 35%.</p>
-    </div>
+<div class="overlay" data-enter="0.81" data-exit="0.88">
+  <div class="achieve-list">
+    <div class="achieve-item overlay-line" data-line-enter="0.81">Fortune 10 onsite engagement</div>
+    <div class="achieve-item overlay-line" data-line-enter="0.82">Created a product that opened a new market vertical</div>
+    <div class="achieve-item overlay-line" data-line-enter="0.83">AI-assisted demo environments — PoC cycles cut by 2 weeks</div>
+    <div class="achieve-item overlay-line" data-line-enter="0.84">Utility-sector market entry from zero</div>
+    <div class="achieve-item overlay-line" data-line-enter="0.85">End-to-end automation reducing manual entry 35%</div>
   </div>
 </div>
 
-<div class="scene" id="act6-industries" style="min-height:auto;padding-top:0;padding-bottom:80px;">
-  <div class="scene-inner">
-    <p class="cin-mono sr" style="margin-bottom:16px;">Verticals</p>
-    <div class="industry-track sr sr-d1">
-      <span class="industry-tag">Aviation</span>
-      <span class="industry-tag">Healthcare</span>
-      <span class="industry-tag">Higher Education</span>
-      <span class="industry-tag">Enterprise</span>
-      <span class="industry-tag">Government</span>
-      <span class="industry-tag">Utilities</span>
-    </div>
-  </div>
+<!-- Phase 8: Skills (88-95%) -->
+<div class="overlay" data-enter="0.88" data-exit="0.95">
+  <div class="overlay-line t-section" data-line-enter="0.88" style="color:var(--text-dim);">The Toolkit</div>
+  <p class="overlay-line t-heading" data-line-enter="0.89" style="margin-bottom:16px;">Everything it takes to ship.</p>
 </div>
 
-<div class="scene-spacer"></div>
+<!-- Phase 9: Close (95-100%) -->
+<div class="overlay" data-enter="0.94" data-exit="1.01">
+  <p class="overlay-line t-heading" data-line-enter="0.94" style="margin-bottom:32px;">Let's build something.</p>
 
-<!-- ════════════════════════════════════════════ -->
-<!-- ACT 7 — THE SKILLS ARSENAL                  -->
-<!-- ════════════════════════════════════════════ -->
-<div class="scene" id="act7">
-  <div class="scene-inner">
-    <div class="act-label sr">The Arsenal</div>
-    <p class="cin-large sr sr-d1" style="margin-bottom:48px;">Everything it takes to ship.</p>
+  <form class="contact-form overlay-line" data-line-enter="0.95" id="contact-form" onsubmit="return false;">
+    <input type="text" id="cf-name" placeholder="Your name" required>
+    <input type="email" id="cf-email" placeholder="Your email" required>
+    <textarea id="cf-message" placeholder="What's on your mind?" required></textarea>
+    <button type="button" onclick="sendContact()">Send Message</button>
+  </form>
 
-    <div class="skill-cluster cluster-data sr sr-d2">
-      <div class="skill-cluster-label">Data & AI</div>
-      <div class="skill-badges">
-        <span class="skill-badge">Python</span>
-        <span class="skill-badge">SQL</span>
-        <span class="skill-badge">TensorFlow</span>
-        <span class="skill-badge">Pandas</span>
-        <span class="skill-badge">NumPy</span>
-        <span class="skill-badge">Neural Networks</span>
-        <span class="skill-badge">Image Classification</span>
-        <span class="skill-badge">Unsupervised Learning</span>
-      </div>
-    </div>
-
-    <div class="skill-cluster cluster-auto sr sr-d3">
-      <div class="skill-cluster-label">Automation & Integration</div>
-      <div class="skill-badges">
-        <span class="skill-badge">n8n</span>
-        <span class="skill-badge">REST APIs</span>
-        <span class="skill-badge">Webhooks</span>
-        <span class="skill-badge">Conditional Logic</span>
-        <span class="skill-badge">Workflow Orchestration</span>
-        <span class="skill-badge">Data Pipelines</span>
-      </div>
-    </div>
-
-    <div class="skill-cluster cluster-delivery sr sr-d4">
-      <div class="skill-cluster-label">Solution Delivery</div>
-      <div class="skill-badges">
-        <span class="skill-badge">Solution Architecture</span>
-        <span class="skill-badge">Technical Discovery</span>
-        <span class="skill-badge">PoC Development</span>
-        <span class="skill-badge">Client Onboarding</span>
-        <span class="skill-badge">Requirements Gathering</span>
-        <span class="skill-badge">Demo Engineering</span>
-      </div>
-    </div>
-
-    <div class="skill-cluster cluster-platforms sr sr-d5">
-      <div class="skill-cluster-label">Platforms & Tools</div>
-      <div class="skill-badges">
-        <span class="skill-badge">Veoci (Expert)</span>
-        <span class="skill-badge">Epic EMR</span>
-        <span class="skill-badge">Jira</span>
-        <span class="skill-badge">Confluence</span>
-        <span class="skill-badge">Git</span>
-        <span class="skill-badge">CRM Systems</span>
-        <span class="skill-badge">Dashboard Development</span>
-      </div>
-    </div>
+  <div class="contact-row overlay-line" data-line-enter="0.96">
+    <a href="https://linkedin.com/in/brendan-hoss" target="_blank" class="contact-pill">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+      LinkedIn
+    </a>
   </div>
-</div>
 
-<div class="scene-spacer"></div>
-
-<!-- ════════════════════════════════════════════ -->
-<!-- CLOSING — THE CONTACT                       -->
-<!-- ════════════════════════════════════════════ -->
-<div class="scene" id="closing">
-  <div class="scene-inner" style="text-align:center;">
-    <p class="cin-large sr" style="margin-bottom:48px;">Let's build something.</p>
-
-    <form class="contact-form sr sr-d2" id="contact-form" onsubmit="return false;">
-      <input type="text" id="cf-name" placeholder="Your name" required>
-      <input type="email" id="cf-email" placeholder="Your email" required>
-      <textarea id="cf-message" placeholder="What's on your mind?" required></textarea>
-      <button type="button" onclick="sendContact()">Send Message</button>
-    </form>
-
-    <div class="contact-row sr sr-d3">
-      <a href="https://linkedin.com/in/brendan-hoss" target="_blank" class="contact-pill">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-        LinkedIn
-      </a>
-    </div>
-
-    <script>
-    function sendContact() {
-      const name = document.getElementById('cf-name').value.trim();
-      const email = document.getElementById('cf-email').value.trim();
-      const msg = document.getElementById('cf-message').value.trim();
-      if (!name || !email || !msg) return;
-      // Obfuscated to prevent bot scraping
-      const t = [104,111,115,115,98,114,101,110,100,97,110,64,103,109,97,105,108,46,99,111,109];
-      const to = t.map(c => String.fromCharCode(c)).join('');
-      const subject = encodeURIComponent('Website Contact from ' + name);
-      const body = encodeURIComponent('From: ' + name + ' (' + email + ')\n\n' + msg);
-      window.location.href = 'mai' + 'lto:' + to + '?subject=' + subject + '&body=' + body;
-      document.getElementById('contact-form').innerHTML = '<div class="form-success">Opening your email client...</div>';
-    }
-    </script>
-
-    <div class="sr sr-d4 closing-name"><span class="name-glow">Brendan Hoss</span></div>
-  </div>
+  <div class="overlay-line closing-name" data-line-enter="0.97"><span class="name-glow">Brendan Hoss</span></div>
 </div>
 
 <footer>&copy; 2026 Brendan Hoss</footer>
 
 <script>
+function sendContact() {
+  var name = document.getElementById('cf-name').value.trim();
+  var email = document.getElementById('cf-email').value.trim();
+  var msg = document.getElementById('cf-message').value.trim();
+  if (!name || !email || !msg) return;
+  var t = [104,111,115,115,98,114,101,110,100,97,110,64,103,109,97,105,108,46,99,111,109];
+  var to = t.map(function(c) { return String.fromCharCode(c); }).join('');
+  var subject = encodeURIComponent('Website Contact from ' + name);
+  var body = encodeURIComponent('From: ' + name + ' (' + email + ')\n\n' + msg);
+  window.location.href = 'mai' + 'lto:' + to + '?subject=' + subject + '&body=' + body;
+  document.getElementById('contact-form').innerHTML = '<div class="form-success">Opening your email client...</div>';
+}
+</script>
+
+<script>
 (function() {
   'use strict';
 
-  // ─── PARTICLE SYSTEM ───
-  const canvas = document.getElementById('particles');
-  const ctx = canvas.getContext('2d');
-  let W, H;
-  let scrollY = 0;
-  let particles = [];
-  const isMobile = window.innerWidth < 768;
-  const BASE_COUNT = isMobile ? 50 : 100;
-  const ACT6_BOOST = isMobile ? 20 : 40;
+  // ─── CONFIGURATION ───
+  var IS_MOBILE = window.innerWidth < 768;
+  var MAX_NODES = IS_MOBILE ? 40 : 80;
+  var MAX_PARTICLES = IS_MOBILE ? 25 : 50;
+  var CONNECT_DIST = IS_MOBILE ? 120 : 160;
+
+  // ─── CANVAS SETUP ───
+  var canvas = document.getElementById('network');
+  var ctx = canvas.getContext('2d');
+  var W, H, CX, CY;
 
   function resize() {
     W = canvas.width = window.innerWidth;
     H = canvas.height = window.innerHeight;
+    CX = W / 2;
+    CY = H / 2;
   }
   window.addEventListener('resize', resize);
   resize();
 
-  function createParticle(boost) {
-    return {
-      x: Math.random() * W,
-      y: Math.random() * H,
-      r: 1 + Math.random() * 2,
-      a: 0.08 + Math.random() * 0.2,
-      vx: (Math.random() - 0.5) * (boost ? 0.8 : 0.4),
-      vy: (Math.random() - 0.5) * (boost ? 0.6 : 0.3),
-      boost: !!boost
-    };
+  // ─── SCROLL STATE ───
+  var scrollPct = 0;
+  var ticking = false;
+  var maxScroll = 1;
+
+  function updateMaxScroll() {
+    maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+    if (maxScroll < 1) maxScroll = 1;
   }
 
-  for (let i = 0; i < BASE_COUNT; i++) {
-    particles.push(createParticle(false));
-  }
-
-  // Track which act is visible for particle boost
-  let inAct6 = false;
-  const act6El = document.getElementById('act6');
-
-  function drawParticles() {
-    ctx.clearRect(0, 0, W, H);
-
-    // Add/remove boost particles
-    const targetCount = inAct6 ? BASE_COUNT + ACT6_BOOST : BASE_COUNT;
-    while (particles.length < targetCount) {
-      particles.push(createParticle(true));
-    }
-    while (particles.length > targetCount) {
-      const idx = particles.findIndex(p => p.boost);
-      if (idx >= 0) particles.splice(idx, 1);
-      else particles.pop();
-    }
-
-    const scrollOffset = scrollY * 0.05;
-
-    for (let i = 0; i < particles.length; i++) {
-      const p = particles[i];
-      p.x += p.vx;
-      p.y += p.vy;
-
-      if (p.x < -10) p.x = W + 10;
-      if (p.x > W + 10) p.x = -10;
-      if (p.y < -10) p.y = H + 10;
-      if (p.y > H + 10) p.y = -10;
-
-      const drawY = p.y + (scrollOffset % H);
-
-      ctx.beginPath();
-      ctx.arc(p.x, drawY, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(240, 240, 245, ${p.a})`;
-      ctx.fill();
-    }
-
-    requestAnimationFrame(drawParticles);
-  }
-  requestAnimationFrame(drawParticles);
-
-  // ─── SCROLL TRACKING (throttled via rAF) ───
-  let ticking = false;
   window.addEventListener('scroll', function() {
-    scrollY = window.pageYOffset;
     if (!ticking) {
       requestAnimationFrame(function() {
-        updateParallax();
+        scrollPct = Math.min(1, Math.max(0, window.pageYOffset / maxScroll));
+        updateOverlays();
+        // Hide scroll hint after 2% scroll
+        var hint = document.getElementById('scroll-hint');
+        if (hint) { if (scrollPct > 0.02) hint.classList.add('hidden'); else hint.classList.remove('hidden'); }
         ticking = false;
       });
       ticking = true;
     }
   }, { passive: true });
 
-  // ─── PARALLAX via CSS custom property ───
-  function updateParallax() {
-    document.documentElement.style.setProperty('--scroll', scrollY);
+  window.addEventListener('resize', updateMaxScroll);
+  updateMaxScroll();
 
-    // Check if Act 6 is in view
-    if (act6El) {
-      const r = act6El.getBoundingClientRect();
-      inAct6 = r.top < window.innerHeight && r.bottom > 0;
+  // ─── SCROLL PROGRESS BAR ───
+  var progressBar = document.getElementById('scroll-progress');
+
+  // ─── PHASE DEFINITIONS ───
+  // Each phase: [startScroll, endScroll, accent hex]
+  var PHASES = [
+    [0.00, 0.12, '#4a9eff'],  // Origin
+    [0.12, 0.25, '#5ab0ff'],  // Gateway
+    [0.25, 0.35, '#6bb8ff'],  // UConn
+    [0.35, 0.48, '#00d4aa'],  // Data
+    [0.48, 0.58, '#6bb8ff'],  // Yale
+    [0.58, 0.68, '#ffb347'],  // Catalyst
+    [0.68, 0.88, '#7c3aed'],  // SE
+    [0.88, 0.95, '#8888a0'],  // Skills
+    [0.95, 1.00, '#4a9eff']   // Close
+  ];
+
+  function getPhaseIndex(s) {
+    for (var i = 0; i < PHASES.length; i++) {
+      if (s >= PHASES[i][0] && s < PHASES[i][1]) return i;
+    }
+    return PHASES.length - 1;
+  }
+
+  function getPhaseAccent(s) {
+    var idx = getPhaseIndex(s);
+    return PHASES[idx][2];
+  }
+
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function clamp01(t) { return Math.max(0, Math.min(1, t)); }
+
+  // ─── HEX TO RGB ───
+  function hexToRgb(hex) {
+    var r = parseInt(hex.slice(1, 3), 16);
+    var g = parseInt(hex.slice(3, 5), 16);
+    var b = parseInt(hex.slice(5, 7), 16);
+    return [r, g, b];
+  }
+
+  // ─── NODE SYSTEM ───
+  var nodes = [];
+  var NODE_DEFS = [];
+
+  // Phase 1: Origin — 4 nodes, cool blue
+  function addNodeDef(birthScroll, color, clusterX, clusterY, spread, isHub) {
+    NODE_DEFS.push({
+      birthScroll: birthScroll,
+      color: color,
+      cx: clusterX,
+      cy: clusterY,
+      spread: spread,
+      isHub: !!isHub
+    });
+  }
+
+  // Build node definitions for each phase
+  (function buildNodeDefs() {
+    var i;
+
+    // Phase 1: Origin (0-0.12) — 4 nodes, center, blue
+    for (i = 0; i < 4; i++) {
+      addNodeDef(0.01 + i * 0.025, '#4a9eff', 0.5, 0.5, 0.08);
+    }
+
+    // Phase 2: Foundation (0.12-0.25) — 8 more nodes
+    for (i = 0; i < 8; i++) {
+      addNodeDef(0.12 + i * 0.015, '#5ab0ff', 0.45 + Math.random() * 0.1, 0.45 + Math.random() * 0.1, 0.12);
+    }
+
+    // Phase 3: UConn (0.25-0.35) — 8 more, slight offset cluster
+    for (i = 0; i < 8; i++) {
+      addNodeDef(0.25 + i * 0.012, '#6bb8ff', 0.6 + Math.random() * 0.05, 0.4 + Math.random() * 0.1, 0.1);
+    }
+
+    // Phase 4: Data (0.35-0.48) — 12 green nodes, new cluster
+    for (i = 0; i < 12; i++) {
+      addNodeDef(0.35 + i * 0.01, '#00d4aa', 0.35 + Math.random() * 0.08, 0.55 + Math.random() * 0.08, 0.12);
+    }
+
+    // Phase 5: Yale (0.48-0.58) — 8 nodes, grid-like
+    for (i = 0; i < 8; i++) {
+      var gx = 0.4 + (i % 4) * 0.05;
+      var gy = 0.4 + Math.floor(i / 4) * 0.06;
+      addNodeDef(0.48 + i * 0.012, '#6bb8ff', gx, gy, 0.02);
+    }
+
+    // Phase 6: Catalyst (0.58-0.68) — 8 amber nodes
+    for (i = 0; i < 8; i++) {
+      addNodeDef(0.58 + i * 0.012, '#ffb347', 0.5 + Math.random() * 0.15 - 0.075, 0.5 + Math.random() * 0.15 - 0.075, 0.1);
+    }
+
+    // Phase 7: SE (0.68-0.88) — 24 nodes EXPLOSION, central hub + industry clusters
+    // Central hub
+    addNodeDef(0.68, '#9f6aff', 0.5, 0.5, 0.01, true);
+
+    // Industry clusters
+    var industries = [
+      { label: 'Aviation',    cx: 0.25, cy: 0.3,  color: '#7c3aed' },
+      { label: 'Healthcare',  cx: 0.75, cy: 0.3,  color: '#6366f1' },
+      { label: 'Higher Ed',   cx: 0.2,  cy: 0.65, color: '#818cf8' },
+      { label: 'Enterprise',  cx: 0.8,  cy: 0.65, color: '#2563eb' },
+      { label: 'Government',  cx: 0.35, cy: 0.8,  color: '#3b82f6' },
+      { label: 'Utilities',   cx: 0.65, cy: 0.8,  color: '#60a5fa' }
+    ];
+
+    for (var c = 0; c < industries.length; c++) {
+      var cl = industries[c];
+      for (var j = 0; j < 4; j++) {
+        addNodeDef(
+          0.70 + c * 0.02 + j * 0.005,
+          cl.color,
+          cl.cx + (Math.random() - 0.5) * 0.04,
+          cl.cy + (Math.random() - 0.5) * 0.04,
+          0.04
+        );
+      }
+    }
+
+    // Phase 8: Skills (0.88-0.95) — no new nodes, reorganize existing
+    // Phase 9: Close — no new nodes
+  })();
+
+  // Industry label data for canvas rendering
+  var INDUSTRY_LABELS = [
+    { label: 'Aviation',    cx: 0.25, cy: 0.3  },
+    { label: 'Healthcare',  cx: 0.75, cy: 0.3  },
+    { label: 'Higher Ed',   cx: 0.2,  cy: 0.65 },
+    { label: 'Enterprise',  cx: 0.8,  cy: 0.65 },
+    { label: 'Government',  cx: 0.35, cy: 0.8  },
+    { label: 'Utilities',   cx: 0.65, cy: 0.8  }
+  ];
+
+  // Skill cluster labels for Phase 8
+  var SKILL_LABELS = [
+    { label: 'Python / SQL / TensorFlow',       cx: 0.3, cy: 0.35, color: '#00d4aa' },
+    { label: 'n8n / APIs / Webhooks',            cx: 0.7, cy: 0.35, color: '#4a9eff' },
+    { label: 'Solution Architecture / Discovery', cx: 0.3, cy: 0.65, color: '#7c3aed' },
+    { label: 'Veoci / Epic / Tools',             cx: 0.7, cy: 0.65, color: '#ffb347' }
+  ];
+
+  // Initialize nodes from definitions
+  function initNodes() {
+    nodes = [];
+    for (var i = 0; i < NODE_DEFS.length && i < MAX_NODES; i++) {
+      var def = NODE_DEFS[i];
+      var baseX = def.cx * W + (Math.random() - 0.5) * def.spread * W;
+      var baseY = def.cy * H + (Math.random() - 0.5) * def.spread * H;
+      nodes.push({
+        x: baseX,
+        y: baseY,
+        homeX: baseX,
+        homeY: baseY,
+        homeCx: def.cx,
+        homeCy: def.cy,
+        r: def.isHub ? 12 : (3 + Math.random() * 5),
+        color: def.color,
+        rgb: hexToRgb(def.color),
+        birthScroll: def.birthScroll,
+        opacity: 0,
+        isHub: def.isHub,
+        driftAngle: Math.random() * Math.PI * 2,
+        driftSpeed: 0.002 + Math.random() * 0.003,
+        driftRadius: 3 + Math.random() * 8,
+        phase: getPhaseIndex(def.birthScroll)
+      });
+    }
+  }
+  initNodes();
+
+  // On resize, recalculate home positions
+  window.addEventListener('resize', function() {
+    for (var i = 0; i < nodes.length; i++) {
+      var n = nodes[i];
+      var def = NODE_DEFS[i];
+      n.homeX = def.cx * W + (n.homeX / (W || 1) - def.cx) * W;
+      n.homeY = def.cy * H + (n.homeY / (H || 1) - def.cy) * H;
+    }
+  });
+
+  // ─── PARTICLE SYSTEM ───
+  var particles = [];
+
+  function spawnParticle() {
+    if (nodes.length < 2) return;
+    // Find two visible connected nodes
+    var visibleNodes = [];
+    for (var i = 0; i < nodes.length; i++) {
+      if (nodes[i].opacity > 0.3) visibleNodes.push(i);
+    }
+    if (visibleNodes.length < 2) return;
+
+    var attempts = 0;
+    while (attempts < 10) {
+      var ai = visibleNodes[Math.floor(Math.random() * visibleNodes.length)];
+      var bi = visibleNodes[Math.floor(Math.random() * visibleNodes.length)];
+      if (ai === bi) { attempts++; continue; }
+      var na = nodes[ai], nb = nodes[bi];
+      var dx = na.x - nb.x, dy = na.y - nb.y;
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < CONNECT_DIST * 1.2) {
+        var accent = hexToRgb(getPhaseAccent(scrollPct));
+        particles.push({
+          fromIdx: ai,
+          toIdx: bi,
+          t: 0,
+          speed: 0.005 + Math.random() * 0.01 + (scrollPct > 0.68 ? 0.008 : 0),
+          rgb: accent,
+          size: 1 + Math.random()
+        });
+        return;
+      }
+      attempts++;
     }
   }
 
-  // ─── INTERSECTION OBSERVER — scroll reveals ───
-  const revealObs = new IntersectionObserver(function(entries) {
-    entries.forEach(function(entry) {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
+  // ─── OVERLAY SYSTEM ───
+  var overlays = document.querySelectorAll('.overlay');
+  var overlayLines = document.querySelectorAll('.overlay-line');
+
+  function updateOverlays() {
+    var s = scrollPct;
+
+    // Update progress bar
+    progressBar.style.height = (s * 100) + '%';
+    progressBar.style.background = getPhaseAccent(s);
+
+    for (var i = 0; i < overlays.length; i++) {
+      var ov = overlays[i];
+      var enter = parseFloat(ov.dataset.enter);
+      var exit = parseFloat(ov.dataset.exit);
+
+      // Fade in over 3% scroll, fade out over 2%
+      var fadeIn = clamp01((s - enter) / 0.03);
+      var fadeOut = clamp01((exit - s) / 0.02);
+      var opacity = Math.min(fadeIn, fadeOut);
+
+      if (opacity > 0) {
+        ov.classList.add('active');
+        ov.style.opacity = opacity;
+      } else {
+        ov.classList.remove('active');
+        ov.style.opacity = 0;
       }
-    });
-  }, {
-    threshold: [0, 0.1, 0.2, 0.3],
-    rootMargin: '0px 0px -40px 0px'
-  });
-
-  document.querySelectorAll('.sr').forEach(function(el) {
-    revealObs.observe(el);
-  });
-
-  // ─── STAT COUNTER ANIMATION ───
-  const counterObs = new IntersectionObserver(function(entries) {
-    entries.forEach(function(entry) {
-      if (entry.isIntersecting && !entry.target.dataset.counted) {
-        entry.target.dataset.counted = 'true';
-        const target = parseInt(entry.target.dataset.target);
-        const suffix = entry.target.dataset.suffix || '';
-        if (isNaN(target)) return;
-
-        const duration = 1500;
-        const start = performance.now();
-
-        function step(now) {
-          const elapsed = now - start;
-          const progress = Math.min(elapsed / duration, 1);
-          const eased = 1 - Math.pow(1 - progress, 3);
-          entry.target.textContent = Math.round(target * eased) + suffix;
-          if (progress < 1) requestAnimationFrame(step);
-        }
-
-        entry.target.textContent = '0' + suffix;
-        requestAnimationFrame(step);
-      }
-    });
-  }, { threshold: 0.5 });
-
-  document.querySelectorAll('.stat-num').forEach(function(el) {
-    counterObs.observe(el);
-  });
-
-  // ─── CONSTELLATION CANVAS (Act 1) ───
-  const constellationCanvas = document.getElementById('constellationCanvas');
-  if (constellationCanvas) {
-    const cCtx = constellationCanvas.getContext('2d');
-    const cW = 800;
-    const cH = 200;
-    constellationCanvas.width = cW;
-    constellationCanvas.height = cH;
-
-    const nodes = [];
-    const nodeCount = isMobile ? 20 : 40;
-    for (let i = 0; i < nodeCount; i++) {
-      nodes.push({
-        x: Math.random() * cW,
-        y: Math.random() * cH,
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: (Math.random() - 0.5) * 0.3,
-        r: 1.5 + Math.random() * 2
-      });
     }
 
-    function drawConstellation() {
-      cCtx.clearRect(0, 0, cW, cH);
+    // Update individual line visibility
+    for (var j = 0; j < overlayLines.length; j++) {
+      var line = overlayLines[j];
+      var lineEnter = parseFloat(line.dataset.lineEnter);
+      if (s >= lineEnter) {
+        line.classList.add('visible');
+      } else {
+        line.classList.remove('visible');
+      }
+    }
 
-      // Draw lines
-      for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-          const dx = nodes[i].x - nodes[j].x;
-          const dy = nodes[i].y - nodes[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 120) {
-            cCtx.beginPath();
-            cCtx.moveTo(nodes[i].x, nodes[i].y);
-            cCtx.lineTo(nodes[j].x, nodes[j].y);
-            cCtx.strokeStyle = `rgba(74, 158, 255, ${0.15 * (1 - dist / 120)})`;
-            cCtx.lineWidth = 0.5;
-            cCtx.stroke();
+    // Counter animation
+    var counters = document.querySelectorAll('[data-counter]');
+    for (var k = 0; k < counters.length; k++) {
+      var el = counters[k];
+      if (el.dataset.counted) continue;
+      var parent = el.closest('.overlay-line');
+      if (parent && parent.classList.contains('visible')) {
+        el.dataset.counted = '1';
+        animateCounter(el);
+      }
+    }
+  }
+
+  function animateCounter(el) {
+    var target = parseInt(el.dataset.counter);
+    var suffix = el.dataset.suffix || '';
+    var duration = 1200;
+    var start = performance.now();
+
+    function step(now) {
+      var elapsed = now - start;
+      var progress = Math.min(elapsed / duration, 1);
+      var eased = 1 - Math.pow(1 - progress, 3);
+      el.textContent = Math.round(target * eased) + suffix;
+      if (progress < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  // ─── PHASE-SPECIFIC NODE BEHAVIOR ───
+  function getTargetPositions(s) {
+    var phase = getPhaseIndex(s);
+
+    for (var i = 0; i < nodes.length; i++) {
+      var n = nodes[i];
+      var def = NODE_DEFS[i];
+
+      // Birth opacity
+      if (s >= def.birthScroll) {
+        var fadeRange = 0.03;
+        n.opacity = clamp01((s - def.birthScroll) / fadeRange);
+      } else {
+        n.opacity = 0;
+      }
+
+      // Phase 5 (Yale): grid formation
+      if (phase === 4 && s >= 0.48 && s < 0.58) {
+        var gridT = clamp01((s - 0.48) / 0.05);
+        var cols = 8;
+        var gridIdx = i % (cols * cols);
+        var gx = (gridIdx % cols) / cols;
+        var gy = Math.floor(gridIdx / cols) / cols;
+        var gridX = W * 0.2 + gx * W * 0.6;
+        var gridY = H * 0.2 + gy * H * 0.6;
+        n.homeX = lerp(def.cx * W + (Math.random() - 0.5) * def.spread * W * 0.3, gridX, gridT);
+        n.homeY = lerp(def.cy * H + (Math.random() - 0.5) * def.spread * H * 0.3, gridY, gridT);
+      }
+      // Phase 6 (Catalyst): organic return
+      else if (phase === 5) {
+        n.homeX = def.cx * W + (Math.random() * 0.001 - 0.0005) * W;
+        n.homeY = def.cy * H + (Math.random() * 0.001 - 0.0005) * H;
+      }
+      // Phase 7 (SE): expand to industry clusters
+      else if (phase === 6 && n.phase <= 6) {
+        // Nodes spread out more dramatically
+        var expandT = clamp01((s - 0.68) / 0.1);
+        var spread = 1 + expandT * 0.3;
+        n.homeX = CX + (def.cx - 0.5) * W * spread;
+        n.homeY = CY + (def.cy - 0.5) * H * spread;
+      }
+      // Phase 8 (Skills): organize into 4 skill clusters
+      else if (phase === 7) {
+        var skillIdx = i % 4;
+        var sc = SKILL_LABELS[skillIdx];
+        var skillT = clamp01((s - 0.88) / 0.04);
+        n.homeX = lerp(n.homeX, sc.cx * W + (Math.random() - 0.5) * 60, skillT * 0.02);
+        n.homeY = lerp(n.homeY, sc.cy * H + (Math.random() - 0.5) * 60, skillT * 0.02);
+      }
+      // Phase 9: zoom out, settle
+      else if (phase === 8) {
+        // Slight pull toward center
+        n.homeX = lerp(n.homeX, CX, 0.001);
+        n.homeY = lerp(n.homeY, CY, 0.001);
+      }
+    }
+  }
+
+  // ─── MAIN RENDER LOOP ───
+  var time = 0;
+
+  function render() {
+    requestAnimationFrame(render);
+    time++;
+    ctx.clearRect(0, 0, W, H);
+
+    var s = scrollPct;
+    var phase = getPhaseIndex(s);
+
+    getTargetPositions(s);
+
+    // ─── Update node positions (drift) ───
+    for (var i = 0; i < nodes.length; i++) {
+      var n = nodes[i];
+      if (n.opacity <= 0) continue;
+
+      n.driftAngle += n.driftSpeed;
+      var driftX = Math.cos(n.driftAngle) * n.driftRadius;
+      var driftY = Math.sin(n.driftAngle * 0.7) * n.driftRadius;
+
+      // Ease toward home
+      n.x += (n.homeX + driftX - n.x) * 0.02;
+      n.y += (n.homeY + driftY - n.y) * 0.02;
+    }
+
+    // ─── Draw connections ───
+    for (var a = 0; a < nodes.length; a++) {
+      if (nodes[a].opacity <= 0) continue;
+      for (var b = a + 1; b < nodes.length; b++) {
+        if (nodes[b].opacity <= 0) continue;
+        var dx = nodes[a].x - nodes[b].x;
+        var dy = nodes[a].y - nodes[b].y;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < CONNECT_DIST) {
+          var alpha = (1 - dist / CONNECT_DIST) * 0.12 * Math.min(nodes[a].opacity, nodes[b].opacity);
+          ctx.beginPath();
+          ctx.moveTo(nodes[a].x, nodes[a].y);
+          // Slight curve for organic feel
+          var midX = (nodes[a].x + nodes[b].x) / 2 + (Math.sin(time * 0.01 + a) * 3);
+          var midY = (nodes[a].y + nodes[b].y) / 2 + (Math.cos(time * 0.01 + b) * 3);
+          ctx.quadraticCurveTo(midX, midY, nodes[b].x, nodes[b].y);
+          ctx.strokeStyle = 'rgba(255, 255, 255, ' + alpha + ')';
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
+      }
+    }
+
+    // ─── Draw nodes ───
+    for (var ni = 0; ni < nodes.length; ni++) {
+      var nd = nodes[ni];
+      if (nd.opacity <= 0) continue;
+
+      var r = nd.r;
+      // Hub node pulses
+      if (nd.isHub) {
+        r += Math.sin(time * 0.03) * 2;
+      }
+
+      // Glow
+      var grad = ctx.createRadialGradient(nd.x, nd.y, 0, nd.x, nd.y, r * 3);
+      grad.addColorStop(0, 'rgba(' + nd.rgb[0] + ',' + nd.rgb[1] + ',' + nd.rgb[2] + ',' + (0.6 * nd.opacity) + ')');
+      grad.addColorStop(0.4, 'rgba(' + nd.rgb[0] + ',' + nd.rgb[1] + ',' + nd.rgb[2] + ',' + (0.15 * nd.opacity) + ')');
+      grad.addColorStop(1, 'rgba(' + nd.rgb[0] + ',' + nd.rgb[1] + ',' + nd.rgb[2] + ', 0)');
+      ctx.beginPath();
+      ctx.arc(nd.x, nd.y, r * 3, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Core
+      ctx.beginPath();
+      ctx.arc(nd.x, nd.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(' + nd.rgb[0] + ',' + nd.rgb[1] + ',' + nd.rgb[2] + ',' + (0.9 * nd.opacity) + ')';
+      ctx.fill();
+    }
+
+    // ─── Update and draw particles ───
+    // Spawn particles
+    if (time % 3 === 0 && particles.length < MAX_PARTICLES) {
+      spawnParticle();
+    }
+
+    for (var pi = particles.length - 1; pi >= 0; pi--) {
+      var p = particles[pi];
+      p.t += p.speed;
+      if (p.t >= 1) {
+        particles.splice(pi, 1);
+        continue;
+      }
+
+      var fromN = nodes[p.fromIdx];
+      var toN = nodes[p.toIdx];
+      if (!fromN || !toN || fromN.opacity <= 0 || toN.opacity <= 0) {
+        particles.splice(pi, 1);
+        continue;
+      }
+
+      var px = lerp(fromN.x, toN.x, p.t);
+      var py = lerp(fromN.y, toN.y, p.t);
+      var palpha = Math.sin(p.t * Math.PI) * 0.7;
+
+      ctx.beginPath();
+      ctx.arc(px, py, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(' + p.rgb[0] + ',' + p.rgb[1] + ',' + p.rgb[2] + ',' + palpha + ')';
+      ctx.fill();
+    }
+
+    // ─── Industry labels (Phase 7) ───
+    if (phase === 6 || phase === 7) {
+      var labelAlpha = phase === 6 ? clamp01((s - 0.72) / 0.04) * 0.4 : 0.4 * clamp01((0.95 - s) / 0.03);
+      ctx.font = '11px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      if (phase === 6) {
+        for (var li = 0; li < INDUSTRY_LABELS.length; li++) {
+          var il = INDUSTRY_LABELS[li];
+          ctx.fillStyle = 'rgba(255, 255, 255, ' + labelAlpha + ')';
+          ctx.fillText(il.label, il.cx * W, il.cy * H - 30);
+        }
+      }
+    }
+
+    // ─── Skill labels (Phase 8) ───
+    if (phase === 7) {
+      var sklAlpha = clamp01((s - 0.89) / 0.03) * 0.5;
+      ctx.font = '12px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (var si = 0; si < SKILL_LABELS.length; si++) {
+        var sl = SKILL_LABELS[si];
+        var slRgb = hexToRgb(sl.color);
+        ctx.fillStyle = 'rgba(' + slRgb[0] + ',' + slRgb[1] + ',' + slRgb[2] + ',' + sklAlpha + ')';
+        ctx.fillText(sl.label, sl.cx * W, sl.cy * H - 40);
+      }
+    }
+
+    // ─── Phase 9: unison pulse ───
+    if (phase === 8) {
+      var pulseT = clamp01((s - 0.95) / 0.02);
+      if (pulseT > 0 && pulseT < 1) {
+        for (var ui = 0; ui < nodes.length; ui++) {
+          if (nodes[ui].opacity > 0) {
+            nodes[ui].r = NODE_DEFS[ui] && NODE_DEFS[ui].isHub ? 12 : (3 + Math.random() * 5);
+            var pulse = Math.sin(pulseT * Math.PI) * 3;
+            nodes[ui].r += pulse;
           }
         }
       }
-
-      // Draw nodes
-      for (let i = 0; i < nodes.length; i++) {
-        const n = nodes[i];
-        n.x += n.vx;
-        n.y += n.vy;
-        if (n.x < 0 || n.x > cW) n.vx *= -1;
-        if (n.y < 0 || n.y > cH) n.vy *= -1;
-
-        cCtx.beginPath();
-        cCtx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-        cCtx.fillStyle = 'rgba(74, 158, 255, 0.6)';
-        cCtx.fill();
-      }
-
-      requestAnimationFrame(drawConstellation);
-    }
-    drawConstellation();
-  }
-
-  // ─── CODE SYMBOLS GENERATOR (Act 1) ───
-  const symbolContainer = document.getElementById('codeSymbols1');
-  if (symbolContainer) {
-    const symbols = ['{ }', '< >', '//', '( )', '[ ]', '&&', '||', '=>', '!=', '++', '0x', '/**/', '#!'];
-    for (let i = 0; i < 15; i++) {
-      const span = document.createElement('span');
-      span.textContent = symbols[Math.floor(Math.random() * symbols.length)];
-      span.style.left = Math.random() * 100 + '%';
-      span.style.animationDelay = Math.random() * 20 + 's';
-      span.style.animationDuration = (15 + Math.random() * 15) + 's';
-      symbolContainer.appendChild(span);
     }
   }
+
+  requestAnimationFrame(render);
+
+  // Initial overlay update
+  updateOverlays();
 
 })();
 </script>
