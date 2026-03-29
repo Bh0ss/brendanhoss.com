@@ -149,6 +149,74 @@ canvas#network {
   margin-top: 4px;
 }
 
+/* Resume download button */
+.resume-download {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 36px;
+  border-radius: 980px;
+  border: 1.5px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.03);
+  color: var(--text);
+  text-decoration: none;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.resume-download::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(74, 158, 255, 0.15);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.resume-download:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.resume-download:hover {
+  border-color: var(--blue);
+  color: #ffffff;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 30px rgba(74, 158, 255, 0.2);
+}
+
+.resume-download svg {
+  width: 20px;
+  height: 20px;
+  position: relative;
+  z-index: 1;
+  transition: transform 0.3s;
+}
+
+.resume-download:hover svg {
+  transform: translateY(2px);
+  animation: downloadBounce 0.6s ease infinite;
+}
+
+@keyframes downloadBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(4px); }
+}
+
+.resume-download span {
+  position: relative;
+  z-index: 1;
+}
+
 .name-glow {
   position: relative;
   display: inline-block;
@@ -482,6 +550,17 @@ footer {
 <!-- Phase 9: Close (95-100%) -->
 <div class="overlay" data-enter="0.94" data-exit="1.01">
   <p class="overlay-line t-heading" data-line-enter="0.94" style="margin-bottom:32px;">Let's build something.</p>
+
+  <div class="overlay-line" data-line-enter="0.945" style="margin-bottom:32px;text-align:center;">
+    <a href="resume.pdf" download="Brendan_Hoss_Resume_2026.pdf" class="resume-download">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      <span>Download Resume</span>
+    </a>
+  </div>
 
   <form class="contact-form overlay-line" data-line-enter="0.95" id="contact-form" onsubmit="return false;">
     <input type="text" id="cf-name" placeholder="Your name" required>
