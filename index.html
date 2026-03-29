@@ -937,6 +937,17 @@ function sendContact() {
       // Ease toward home
       n.x += (n.homeX + driftX - n.x) * 0.02;
       n.y += (n.homeY + driftY - n.y) * 0.02;
+
+      // Repel from center text zone (soft push outward)
+      var dx = n.x - W * 0.5;
+      var dy = n.y - H * 0.5;
+      var distFromCenter = Math.sqrt(dx * dx + dy * dy);
+      var safeRadius = Math.min(W, H) * 0.22;
+      if (distFromCenter < safeRadius && distFromCenter > 0 && !n.isHub) {
+        var pushStrength = (1 - distFromCenter / safeRadius) * 1.5;
+        n.x += (dx / distFromCenter) * pushStrength;
+        n.y += (dy / distFromCenter) * pushStrength;
+      }
     }
 
     // ─── Draw connections ───
@@ -1064,6 +1075,19 @@ function sendContact() {
         }
       }
     }
+
+    // ─── Text readability vignette ───
+    // Darken the center area where text overlays appear
+    var vigW = Math.min(700, W * 0.7);
+    var vigH = H * 0.5;
+    var vigX = W / 2;
+    var vigY = H / 2;
+    var vigGrad = ctx.createRadialGradient(vigX, vigY, 0, vigX, vigY, Math.max(vigW, vigH));
+    vigGrad.addColorStop(0, 'rgba(10, 10, 15, 0.7)');
+    vigGrad.addColorStop(0.5, 'rgba(10, 10, 15, 0.4)');
+    vigGrad.addColorStop(1, 'rgba(10, 10, 15, 0)');
+    ctx.fillStyle = vigGrad;
+    ctx.fillRect(0, 0, W, H);
   }
 
   requestAnimationFrame(render);
