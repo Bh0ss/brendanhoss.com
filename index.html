@@ -856,11 +856,11 @@ footer {
   <div class="scene-inner" style="text-align:center;">
     <p class="cin-large sr" style="margin-bottom:48px;">Let's build something.</p>
 
-    <form class="contact-form sr sr-d2" id="contact-form" action="https://formspree.io/f/xpwzgkvq" method="POST">
-      <input type="text" name="name" placeholder="Your name" required>
-      <input type="email" name="email" placeholder="Your email" required>
-      <textarea name="message" placeholder="What's on your mind?" required></textarea>
-      <button type="submit">Send Message</button>
+    <form class="contact-form sr sr-d2" id="contact-form" onsubmit="return false;">
+      <input type="text" id="cf-name" placeholder="Your name" required>
+      <input type="email" id="cf-email" placeholder="Your email" required>
+      <textarea id="cf-message" placeholder="What's on your mind?" required></textarea>
+      <button type="button" onclick="sendContact()">Send Message</button>
     </form>
 
     <div class="contact-row sr sr-d3">
@@ -871,25 +871,19 @@ footer {
     </div>
 
     <script>
-    document.getElementById('contact-form').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      const form = this;
-      const btn = form.querySelector('button');
-      btn.textContent = 'Sending...';
-      btn.disabled = true;
-      try {
-        const res = await fetch(form.action, { method: 'POST', body: new FormData(form), headers: { 'Accept': 'application/json' } });
-        if (res.ok) {
-          form.innerHTML = '<div class="form-success">Message sent. I\'ll be in touch.</div>';
-        } else {
-          btn.textContent = 'Failed — try again';
-          btn.disabled = false;
-        }
-      } catch(err) {
-        btn.textContent = 'Failed — try again';
-        btn.disabled = false;
-      }
-    });
+    function sendContact() {
+      const name = document.getElementById('cf-name').value.trim();
+      const email = document.getElementById('cf-email').value.trim();
+      const msg = document.getElementById('cf-message').value.trim();
+      if (!name || !email || !msg) return;
+      // Obfuscated to prevent bot scraping
+      const t = [104,111,115,115,98,114,101,110,100,97,110,64,103,109,97,105,108,46,99,111,109];
+      const to = t.map(c => String.fromCharCode(c)).join('');
+      const subject = encodeURIComponent('Website Contact from ' + name);
+      const body = encodeURIComponent('From: ' + name + ' (' + email + ')\n\n' + msg);
+      window.location.href = 'mai' + 'lto:' + to + '?subject=' + subject + '&body=' + body;
+      document.getElementById('contact-form').innerHTML = '<div class="form-success">Opening your email client...</div>';
+    }
     </script>
 
     <div class="sr sr-d4 closing-name"><span class="name-glow">Brendan Hoss</span></div>
