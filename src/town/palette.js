@@ -3,9 +3,9 @@
 // they drop straight into THREE.Color.
 
 export const SKY = {
-  top: 0x8fd0d6,      // pale teal zenith
-  horizon: 0xf3ede0,  // warm cream haze at the horizon
-  fog: 0xdfeae6,      // fog blends toward the horizon
+  top: 0x6fc8da,      // brighter teal zenith
+  horizon: 0xfaf2e2,  // warm cream haze at the horizon
+  fog: 0xe7eee6,      // fog blends toward the horizon
 };
 
 export const GROUND = {

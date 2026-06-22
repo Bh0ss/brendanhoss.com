@@ -38,22 +38,30 @@ export class Player {
     torso.castShadow = true;
     this.rig.add(torso);
 
+    // Neck
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 0.32, 8), skin);
+    neck.position.y = 2.42;
+    this.rig.add(neck);
+
     // Head + hair cap
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 12), skin);
-    head.position.y = 2.75;
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.47, 18, 14), skin);
+    head.position.y = 2.78;
     head.castShadow = true;
     this.rig.add(head);
-    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.52, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.55), hair);
-    cap.position.y = 2.82;
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.49, 18, 12, 0, Math.PI * 2, 0, Math.PI * 0.6), hair);
+    cap.position.y = 2.84;
     this.rig.add(cap);
 
-    // Arms (pivoted at the shoulder so they swing)
+    // Arms (pivoted at the shoulder so they swing), with hands
     this.armL = new THREE.Group(); this.armL.position.set(-0.72, 2.25, 0);
     this.armR = new THREE.Group(); this.armR.position.set(0.72, 2.25, 0);
-    for (const [grp, mat] of [[this.armL, shirt], [this.armR, shirt]]) {
-      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.32, 1.1, 0.32), mat);
-      arm.position.y = -0.55; arm.castShadow = true;
+    for (const grp of [this.armL, this.armR]) {
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.3), shirt);
+      arm.position.y = -0.5; arm.castShadow = true;
       grp.add(arm);
+      const hand = new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 8), skin);
+      hand.position.y = -1.05; hand.castShadow = true;
+      grp.add(hand);
       this.rig.add(grp);
     }
 
