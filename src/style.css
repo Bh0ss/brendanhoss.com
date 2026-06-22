@@ -21,7 +21,7 @@ body {
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  height: 900vh; /* scroll runway that drives the camera fly-through */
+  height: 1000vh; /* scroll runway that drives the camera fly-through */
 }
 
 /* Static gradient fallback if WebGL fails to init */
@@ -242,16 +242,26 @@ canvas#scene {
 }
 .stat-item { text-align: center; }
 
-.achieve-list { display: flex; flex-direction: column; gap: 12px; max-width: 620px; }
+.achieve-list {
+  display: flex; flex-direction: column; gap: 14px;
+  max-width: 680px;
+  padding: clamp(20px, 3vw, 30px);
+  background: rgba(8, 10, 18, 0.55);
+  border: 1px solid rgba(159, 106, 255, 0.20);
+  border-radius: 16px;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+}
 .achieve-item {
-  font-size: clamp(14px, 1.6vw, 17px);
+  font-size: clamp(15px, 1.7vw, 19px);
+  font-weight: 400;
   color: var(--text);
-  padding: 12px 20px;
-  background: rgba(124, 58, 237, 0.08);
-  border-left: 2px solid rgba(124, 58, 237, 0.45);
-  border-radius: 0 8px 8px 0;
+  padding: 14px 22px;
+  background: rgba(124, 58, 237, 0.12);
+  border-left: 3px solid var(--purple);
+  border-radius: 0 10px 10px 0;
   text-align: left;
-  backdrop-filter: blur(4px);
+  line-height: 1.4;
 }
 
 .skill-grid {

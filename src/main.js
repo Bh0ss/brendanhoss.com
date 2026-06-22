@@ -55,8 +55,10 @@ function updateOverlays(s) {
   for (const ov of overlays) {
     const enter = parseFloat(ov.dataset.enter);
     const exit = parseFloat(ov.dataset.exit);
-    const fadeIn = clamp01((s - enter) / 0.03);
-    const fadeOut = clamp01((exit - s) / 0.025);
+    // Keep fades shorter than the narrowest window so every section reaches
+    // full opacity and holds there (no more flashing-by while half-faded).
+    const fadeIn = clamp01((s - enter) / 0.02);
+    const fadeOut = clamp01((exit - s) / 0.02);
     const opacity = Math.min(fadeIn, fadeOut);
     if (opacity > 0) {
       ov.classList.add('active');

@@ -26,7 +26,7 @@ export const PHASES = [
   { id: 'yale',      scroll: [0.52, 0.62], color: PALETTE.clinical, center: [-12, -13, -124],count: 24, radius: 10 },
   { id: 'catalyst',  scroll: [0.62, 0.72], color: PALETTE.amber,    center: [20, 9, -150],   count: 24, radius: 9  },
   // The main event — a dense hub with six industry sub-clusters orbiting it.
-  { id: 'se',        scroll: [0.72, 0.86], color: PALETTE.purple,   center: [0, 0, -182],    count: 30, radius: 7, hub: true,
+  { id: 'se',        scroll: [0.70, 0.90], color: PALETTE.purple,   center: [0, 0, -182],    count: 30, radius: 7, hub: true,
     satellites: [
       { label: 'Aviation',   offset: [-22, 14, -8],  color: PALETTE.purple },
       { label: 'Healthcare', offset: [22, 14, -8],   color: PALETTE.indigo },
@@ -35,8 +35,8 @@ export const PHASES = [
       { label: 'Government', offset: [-14, -18, -4], color: 0x3b82f6 },
       { label: 'Utilities',  offset: [16, -18, -4],  color: 0x60a5fa },
     ] },
-  { id: 'skills',    scroll: [0.86, 0.93], color: PALETTE.slate,    center: [0, 0, -214],    count: 28, radius: 13 },
-  { id: 'close',     scroll: [0.93, 1.01], color: PALETTE.blue,     center: [0, 0, -240],    count: 20, radius: 11 },
+  { id: 'skills',    scroll: [0.90, 0.955], color: PALETTE.slate,   center: [0, 0, -214],    count: 28, radius: 13 },
+  { id: 'close',     scroll: [0.955, 1.01], color: PALETTE.blue,    center: [0, 0, -240],    count: 20, radius: 11 },
 ];
 
 // Camera flies a smooth curve sitting "behind" each cluster, looking forward
