@@ -52,6 +52,19 @@ export class Player {
     cap.position.y = 2.84;
     this.rig.add(cap);
 
+    // Eyes (front of head, +z) so the front view reads friendly
+    const eyeMat = new THREE.MeshStandardMaterial({ color: 0x2a2a30, roughness: 0.5 });
+    for (const sx of [-1, 1]) {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 8), eyeMat);
+      eye.position.set(sx * 0.16, 2.82, 0.43);
+      this.rig.add(eye);
+    }
+
+    // Collar
+    const collar = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.14, 0.55), this._mat(0x3f86e0));
+    collar.position.y = 2.28;
+    this.rig.add(collar);
+
     // Arms (pivoted at the shoulder so they swing), with hands
     this.armL = new THREE.Group(); this.armL.position.set(-0.72, 2.25, 0);
     this.armR = new THREE.Group(); this.armR.position.set(0.72, 2.25, 0);

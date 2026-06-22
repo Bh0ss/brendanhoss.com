@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { GROUND } from './palette.js';
+import { GROUND, SKY } from './palette.js';
 
 // Stylized shoreline water. The surface is one big plane that DISCARDS every
 // fragment shoreward of the waterline, so it never pokes through the grass no
@@ -20,6 +20,8 @@ export function createWater({ waterline = 56, sunDir }) {
       uFoam: { value: new THREE.Color(0xfbfdfb) },
       uSun: { value: sunDir.clone().normalize() },
       uShore: { value: waterline },
+      uSkyTop: { value: new THREE.Color(SKY.top) },
+      uSkyHorizon: { value: new THREE.Color(SKY.horizon) },
     },
     vertexShader: /* glsl */`
       uniform float uTime;
@@ -41,7 +43,7 @@ export function createWater({ waterline = 56, sunDir }) {
       }
     `,
     fragmentShader: /* glsl */`
-      uniform vec3 uDeep, uShallow, uFoam, uSun;
+      uniform vec3 uDeep, uShallow, uFoam, uSun, uSkyTop, uSkyHorizon;
       uniform float uShore, uTime;
       varying vec3 vWorld;
       varying vec3 vNormalW;
@@ -53,10 +55,16 @@ export function createWater({ waterline = 56, sunDir }) {
         float fres = pow(1.0 - max(dot(N, V), 0.0), 2.5);
         vec3 col = mix(uDeep, uShallow, clamp(fres*1.4 + 0.3, 0.0, 1.0));
 
+        // sky reflection (stronger at grazing angles)
+        vec3 R = reflect(-V, N);
+        float ry = clamp(R.y * 0.5 + 0.5, 0.0, 1.0);
+        vec3 sky = mix(uSkyHorizon, uSkyTop, smoothstep(0.0, 0.6, ry));
+        col = mix(col, sky, fres * 0.55);
+
         vec3 H = normalize(uSun + V);
-        float spec = pow(max(dot(N, H), 0.0), 80.0);
-        float sparkle = step(0.93, hash(floor(vWorld.xz*2.0) + floor(uTime*3.0)));
-        col += spec * 0.7 + sparkle * spec * 1.4;
+        float spec = pow(max(dot(N, H), 0.0), 90.0);
+        float sparkle = step(0.92, hash(floor(vWorld.xz*2.0) + floor(uTime*3.0)));
+        col += spec * 1.1 + sparkle * spec * 1.8;
 
         float foam = smoothstep(4.0, 0.0, vWorld.z - uShore);   // band at the waterline
         foam *= 0.6 + 0.4 * sin(vWorld.x*0.5 + uTime*2.0);

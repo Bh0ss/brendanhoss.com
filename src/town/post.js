@@ -10,6 +10,35 @@ import { HorizontalTiltShiftShader } from 'three/addons/shaders/HorizontalTiltSh
 import { VerticalTiltShiftShader } from 'three/addons/shaders/VerticalTiltShiftShader.js';
 import { VignetteShader } from 'three/addons/shaders/VignetteShader.js';
 
+// Painterly color grade (LDR, post-tonemap): gentle S-contrast, a teal-orange
+// split-tone (cool shadows / warm highlights), and a saturation lift — the
+// cohesive "look" Abeto gets from a baked LUT, done analytically.
+const ColorGradeShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    contrast: { value: 1.07 },
+    saturation: { value: 1.14 },
+    lift: { value: 0.012 },
+    splitStrength: { value: 0.05 },
+  },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: /* glsl */`
+    uniform sampler2D tDiffuse;
+    uniform float contrast, saturation, lift, splitStrength;
+    varying vec2 vUv;
+    void main(){
+      vec4 c = texture2D(tDiffuse, vUv);
+      vec3 col = c.rgb;
+      col = (col - 0.5) * contrast + 0.5 + lift;
+      float l = dot(col, vec3(0.299, 0.587, 0.114));
+      vec3 warm = vec3(1.0, 0.96, 0.88);
+      vec3 cool = vec3(0.90, 0.97, 1.04);
+      col *= mix(cool, warm, smoothstep(0.15, 0.85, l)) * (1.0 - splitStrength) + splitStrength;
+      col = mix(vec3(l), col, saturation);
+      gl_FragColor = vec4(clamp(col, 0.0, 1.0), c.a);
+    }`,
+};
+
 // The "Apple-grade" look comes mostly from post: ambient occlusion to ground
 // everything, a whisper of bloom on the sky/water, a tilt-shift diorama blur
 // that sells the "tiny world", and a soft vignette + grade. Wrapped so a
@@ -43,6 +72,8 @@ export function createComposer(renderer, scene, camera, { mobile = false } = {})
 
   // Tone-map + sRGB here so subsequent passes operate on display-ready color.
   composer.addPass(new OutputPass());
+
+  composer.addPass(new ShaderPass(ColorGradeShader));
 
   // Tilt-shift: blur grows with vertical distance from a sharp focus band.
   const BLUR = mobile ? 1.4 : 2.0;

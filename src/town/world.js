@@ -218,6 +218,22 @@ function sailboat() {
   return g;
 }
 
+// A little Thimble-Island: rocky mound + a pine or two, sits in the Sound.
+function island(s = 1) {
+  const g = new THREE.Group();
+  const base = new THREE.Mesh(new THREE.DodecahedronGeometry(3 * s, 0), mat(0x8b8f93));
+  base.scale.y = 0.45; base.position.y = 0.3 * s; base.castShadow = true; g.add(base);
+  const grass = new THREE.Mesh(new THREE.DodecahedronGeometry(2.4 * s, 0), mat(0x7fae5c));
+  grass.scale.y = 0.5; grass.position.y = 1.0 * s; g.add(grass);
+  const n = 1 + (Math.random() * 2 | 0);
+  for (let i = 0; i < n; i++) {
+    const p = pine(); p.scale.setScalar(0.6 * s);
+    p.position.set((Math.random() - 0.5) * 3 * s, 1.0 * s, (Math.random() - 0.5) * 3 * s);
+    g.add(p);
+  }
+  return g;
+}
+
 function pathStrip(x1, z1, x2, z2, width = 4) {
   const dx = x2 - x1, dz = z2 - z1;
   const len = Math.hypot(dx, dz);
@@ -285,6 +301,21 @@ export function buildWorld(scene) {
     b.rotation.y = Math.random() * Math.PI;
     b.userData = { phase: Math.random() * Math.PI * 2, baseY: 0 };
     group.add(b); boats.push(b);
+  }
+
+  // Thimble Islands scattered across the Sound
+  for (let i = 0; i < 7; i++) {
+    const isl = island(1.4 + Math.random() * 2.2);
+    isl.position.set((Math.random() - 0.5) * 240, 0.1, SHORE_Z + 70 + Math.random() * 150);
+    isl.rotation.y = Math.random() * Math.PI;
+    group.add(isl);
+  }
+  // a long low far-shore ridge on the horizon
+  for (let i = 0; i < 5; i++) {
+    const hill = new THREE.Mesh(new THREE.DodecahedronGeometry(26 + Math.random() * 16, 0), mat(0x6f9e5a, { flatShading: true }));
+    hill.scale.set(1.4, 0.32, 1);
+    hill.position.set(-150 + i * 75 + Math.random() * 30, 1, SHORE_Z + 260 + Math.random() * 30);
+    group.add(hill);
   }
 
   // ── Gazebo + flagpole + benches on the green ─────────────────────────────
