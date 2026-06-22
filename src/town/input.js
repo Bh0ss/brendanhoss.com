@@ -1,24 +1,23 @@
 // Unified input: keyboard movement, pointer drag-to-orbit vs tap-to-move
-// disambiguation, and wheel zoom. The Town reads `keys` each frame and
-// subscribes to onTap / camera deltas.
+// disambiguation, wheel zoom, and two-finger pinch zoom on touch. The Town
+// reads `keys` each frame and consumes accumulated camera deltas.
 
-const DRAG_THRESHOLD = 6; // px of movement before a press counts as a drag
+const DRAG_THRESHOLD = 6; // px before a press counts as a drag
 
 export class Input {
   constructor(domElement) {
     this.el = domElement;
     this.keys = new Set();
-    this.dragYaw = 0;   // accumulated yaw delta, consumed by Town each frame
+    this.dragYaw = 0;
     this.dragPitch = 0;
-    this.zoomDelta = 0; // accumulated wheel, consumed each frame
+    this.zoomDelta = 0;
     this._tapHandlers = [];
 
-    this._down = false;
+    this.pointers = new Map(); // id -> {x, y}
     this._dragging = false;
-    this._startX = 0;
-    this._startY = 0;
-    this._lastX = 0;
-    this._lastY = 0;
+    this._startX = 0; this._startY = 0;
+    this._lastX = 0; this._lastY = 0;
+    this._pinchDist = 0;
 
     this._bind();
   }
@@ -27,7 +26,6 @@ export class Input {
 
   _bind() {
     addEventListener('keydown', (e) => {
-      // Ignore when typing into form fields.
       if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
       this.keys.add(e.code);
     });
@@ -36,22 +34,36 @@ export class Input {
 
     const el = this.el;
     el.addEventListener('pointerdown', (e) => {
-      this._down = true;
-      this._dragging = false;
-      this._startX = this._lastX = e.clientX;
-      this._startY = this._lastY = e.clientY;
+      this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (this.pointers.size === 1) {
+        this._dragging = false;
+        this._startX = this._lastX = e.clientX;
+        this._startY = this._lastY = e.clientY;
+      } else {
+        this._dragging = true; // multi-touch is never a tap
+        this._pinchDist = 0;
+      }
       el.setPointerCapture?.(e.pointerId);
     });
 
     el.addEventListener('pointermove', (e) => {
-      if (!this._down) return;
+      const p = this.pointers.get(e.pointerId);
+      if (!p) return;
+      p.x = e.clientX; p.y = e.clientY;
+
+      if (this.pointers.size >= 2) {
+        const pts = [...this.pointers.values()];
+        const d = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        if (this._pinchDist) this.zoomDelta += (this._pinchDist - d) * 0.05;
+        this._pinchDist = d;
+        return;
+      }
+
       const dx = e.clientX - this._lastX;
       const dy = e.clientY - this._lastY;
-      this._lastX = e.clientX;
-      this._lastY = e.clientY;
-      if (!this._dragging) {
-        const moved = Math.hypot(e.clientX - this._startX, e.clientY - this._startY);
-        if (moved > DRAG_THRESHOLD) this._dragging = true;
+      this._lastX = e.clientX; this._lastY = e.clientY;
+      if (!this._dragging && Math.hypot(e.clientX - this._startX, e.clientY - this._startY) > DRAG_THRESHOLD) {
+        this._dragging = true;
       }
       if (this._dragging) {
         this.dragYaw -= dx * 0.005;
@@ -60,11 +72,10 @@ export class Input {
     });
 
     const endPointer = (e) => {
-      if (!this._down) return;
-      this._down = false;
+      const had = this.pointers.delete(e.pointerId);
       el.releasePointerCapture?.(e.pointerId);
-      if (!this._dragging) {
-        // It was a tap — emit normalized device coords for raycasting.
+      if (this.pointers.size < 2) this._pinchDist = 0;
+      if (had && this.pointers.size === 0 && !this._dragging) {
         const rect = el.getBoundingClientRect();
         const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
         const ny = -((e.clientY - rect.top) / rect.height) * 2 + 1;
@@ -80,8 +91,6 @@ export class Input {
     }, { passive: false });
   }
 
-  // Camera-relative movement vector from WASD / arrows. Returns {x, z} in the
-  // range [-1, 1] each, NOT normalized (Town normalizes after rotating).
   moveAxis() {
     let x = 0, z = 0;
     const k = this.keys;
@@ -92,7 +101,6 @@ export class Input {
     return { x, z };
   }
 
-  // Consume accumulated camera deltas (call once per frame).
   takeCameraDelta() {
     const out = { yaw: this.dragYaw, pitch: this.dragPitch, zoom: this.zoomDelta };
     this.dragYaw = 0; this.dragPitch = 0; this.zoomDelta = 0;

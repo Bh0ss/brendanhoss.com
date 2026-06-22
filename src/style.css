@@ -156,6 +156,24 @@ body.no-webgl #preloader { display: none; }
 #fallback .fb-note { max-width: 540px; line-height: 1.6; opacity: 0.85; }
 #fallback a { color: var(--teal); font-weight: 600; }
 
+/* ── Mute button ───────────────────────────────────────────────────────── */
+#mute {
+  position: fixed; top: 18px; right: 20px; z-index: 22;
+  width: 42px; height: 42px; border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  color: var(--cream); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.8s ease 0.3s, transform 0.15s ease, background 0.2s ease;
+}
+body.ready #mute { opacity: 1; }
+#mute:hover { transform: translateY(-1px); background: rgba(255, 255, 255, 0.28); }
+#mute svg { width: 20px; height: 20px; }
+#mute .ic-off { display: none; }
+#mute.muted .ic-on { display: none; }
+#mute.muted .ic-off { display: block; }
+
 /* ── Proximity prompt ──────────────────────────────────────────────────── */
 #prompt {
   position: fixed;

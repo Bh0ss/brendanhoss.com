@@ -4,6 +4,12 @@ import { Town } from './town/Town.js';
 const mobile = window.matchMedia('(max-width: 768px)').matches || window.innerWidth < 768;
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+// Touch devices: the prompt opens on tap, not the E key.
+if (window.matchMedia('(hover: none), (pointer: coarse)').matches) {
+  const pk = document.querySelector('#prompt .prompt-key');
+  if (pk) pk.textContent = 'tap to read';
+}
+
 const canvas = document.getElementById('scene');
 let town;
 try {

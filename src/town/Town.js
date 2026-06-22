@@ -8,6 +8,7 @@ import { createComposer } from './post.js';
 import { Player } from './player.js';
 import { Input } from './input.js';
 import { createUI } from './ui.js';
+import { createAudio } from './audio.js';
 import { byId } from '../data.js';
 
 // Third-person town. Owns renderer/scene/camera + the post stack, drives the
@@ -52,10 +53,25 @@ export class Town {
     for (const it of this.landmarks.interactables) {
       if (it.collide > 0) this.world.obstacles.push({ x: it.x, z: it.z, r: it.collide });
     }
-    this.ui = createUI();
+    this.audio = createAudio();
+    this.ui = createUI(this.audio);
     this.nearest = null;
+    this._lastStep = 0;
+    this.motion = reducedMotion ? 0.4 : 1;
     addEventListener('keydown', (e) => {
       if (e.code === 'KeyE' && this.nearest && !this.ui.isOpen()) this.ui.openCard(this.nearest.data);
+    });
+
+    // Start audio on the first user gesture (autoplay policy).
+    const startAudio = () => { this.audio.start(); removeEventListener('pointerdown', startAudio); removeEventListener('keydown', startAudio); };
+    addEventListener('pointerdown', startAudio);
+    addEventListener('keydown', startAudio);
+
+    const muteBtn = document.getElementById('mute');
+    if (muteBtn) muteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.audio.start();
+      muteBtn.classList.toggle('muted', this.audio.toggle());
     });
 
     this.player = new Player();
@@ -171,7 +187,7 @@ export class Town {
   }
 
   update(dt) {
-    this.time += dt;
+    this.time += dt * this.motion;
     const t = this.time;
 
     const frozen = this.ui.isOpen();
@@ -182,8 +198,14 @@ export class Town {
       worldDir.x = fx * -a.z + rx * a.x;
       worldDir.z = fz * -a.z + rz * a.x;
     }
-    this.player.update(dt, worldDir, this.world.obstacles, this.world.clampFn);
+    const moving = this.player.update(dt, worldDir, this.world.obstacles, this.world.clampFn);
     this._updateCamera(dt);
+
+    // Footsteps on each half-stride.
+    if (moving) {
+      const step = Math.floor(this.player.walkPhase / Math.PI);
+      if (step !== this._lastStep) { this._lastStep = step; this.audio.footstep(step); }
+    }
 
     // Nearest interactable → proximity prompt.
     const pp0 = this.player.position;

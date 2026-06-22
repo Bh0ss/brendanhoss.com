@@ -60,7 +60,7 @@ function animateCounters(root) {
   }
 }
 
-export function createUI() {
+export function createUI(audio = null) {
   const prompt = document.getElementById('prompt');
   const promptName = document.getElementById('prompt-name');
   const card = document.getElementById('card');
@@ -88,6 +88,7 @@ export function createUI() {
     card.classList.remove('hidden');
     backdrop.classList.remove('hidden');
     prompt.classList.add('hidden');
+    audio?.ui('open');
     requestAnimationFrame(() => { card.classList.add('shown'); animateCounters(cardBody); });
   }
 
@@ -96,6 +97,7 @@ export function createUI() {
     card.classList.remove('shown');
     backdrop.classList.add('hidden');
     setTimeout(() => card.classList.add('hidden'), 260);
+    audio?.ui('close');
     setPrompt(currentPrompt);
   }
 
