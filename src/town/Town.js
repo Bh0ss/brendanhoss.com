@@ -1,11 +1,14 @@
 import * as THREE from 'three';
 import { SKY } from './palette.js';
 import { buildWorld } from './world.js';
+import { buildLandmarks } from './landmarks.js';
 import { createWater } from './water.js';
 import { createAtmosphere } from './atmosphere.js';
 import { createComposer } from './post.js';
 import { Player } from './player.js';
 import { Input } from './input.js';
+import { createUI } from './ui.js';
+import { byId } from '../data.js';
 
 // Third-person town. Owns renderer/scene/camera + the post stack, drives the
 // player from input, and runs a smoothed follow-cam you can orbit and zoom.
@@ -42,6 +45,18 @@ export class Town {
     this.scene.add(this.water.mesh);
 
     this.atmosphere = createAtmosphere(this.scene);
+
+    // Career landmarks (buildings + signs + beacons); merge their footprints
+    // into the collision set so the player can't walk through them.
+    this.landmarks = buildLandmarks(this.scene);
+    for (const it of this.landmarks.interactables) {
+      if (it.collide > 0) this.world.obstacles.push({ x: it.x, z: it.z, r: it.collide });
+    }
+    this.ui = createUI();
+    this.nearest = null;
+    addEventListener('keydown', (e) => {
+      if (e.code === 'KeyE' && this.nearest && !this.ui.isOpen()) this.ui.openCard(this.nearest.data);
+    });
 
     this.player = new Player();
     this.player.position.set(0, 0, 20);
@@ -118,6 +133,8 @@ export class Town {
     this._last = performance.now();
     this._loop = this._loop.bind(this);
     requestAnimationFrame(this._loop);
+    // Welcome card on first arrival.
+    setTimeout(() => this.ui.openCard(byId.intro), 650);
   }
 
   resize() {
@@ -157,7 +174,8 @@ export class Town {
     this.time += dt;
     const t = this.time;
 
-    const a = this.input.moveAxis();
+    const frozen = this.ui.isOpen();
+    const a = frozen ? { x: 0, z: 0 } : this.input.moveAxis();
     let worldDir = { x: 0, z: 0 };
     if (a.x || a.z) {
       const { fx, fz, rx, rz } = this._cameraBasis();
@@ -166,6 +184,19 @@ export class Town {
     }
     this.player.update(dt, worldDir, this.world.obstacles, this.world.clampFn);
     this._updateCamera(dt);
+
+    // Nearest interactable → proximity prompt.
+    const pp0 = this.player.position;
+    let near = null, best = Infinity;
+    for (const it of this.landmarks.interactables) {
+      const d = Math.hypot(pp0.x - it.x, pp0.z - it.z);
+      if (d < it.interact && d < best) { near = it; best = d; }
+    }
+    if (near !== this.nearest) {
+      this.nearest = near;
+      this.ui.setPrompt(near ? near.data : null);
+    }
+    this.landmarks.update(dt, this.time);
 
     // ground the character
     const pp = this.player.position;

@@ -1,72 +1,130 @@
-// Career narrative -> 3D space.
-// Each phase is a cluster of glowing nodes positioned along a forward-moving
-// path through space. The camera flies through them as the user scrolls,
-// arriving at each chapter of Brendan's story.
+// Brendan's story, mapped onto places in the town. Each landmark gets a
+// building + sign + beacon (built in landmarks.js) and opens a card on
+// approach. `pos` is [x, z]; `face` is the heading (radians) the building turns
+// to. Content preserved from the original site.
 
-export const PALETTE = {
-  bg: 0x05060a,
-  blue: 0x4a9eff,
-  clinical: 0x6bb8ff,
-  green: 0x00d4aa,
-  amber: 0xffb347,
-  purple: 0x9f6aff,
-  indigo: 0x6366f1,
-  slate: 0x8890b0,
-};
-
-// scroll: [start, end] window where this chapter is "active"
-// center:  world-space cluster center [x, y, z]
-// count:   nodes in the cluster   |   radius: cluster spread
-export const PHASES = [
-  { id: 'origin',    scroll: [0.00, 0.10], color: PALETTE.blue,     center: [0, 0, 0],       count: 18, radius: 10 },
-  { id: 'gateway',   scroll: [0.10, 0.22], color: PALETTE.blue,     center: [-16, 7, -26],   count: 22, radius: 9  },
-  { id: 'uconn',     scroll: [0.22, 0.33], color: PALETTE.clinical, center: [18, -5, -50],   count: 22, radius: 9  },
-  { id: 'lambda',    scroll: [0.33, 0.43], color: PALETTE.green,    center: [-20, -9, -74],  count: 26, radius: 10 },
-  { id: 'story',     scroll: [0.43, 0.52], color: PALETTE.green,    center: [16, 11, -98],   count: 22, radius: 9  },
-  { id: 'yale',      scroll: [0.52, 0.62], color: PALETTE.clinical, center: [-12, -13, -124],count: 24, radius: 10 },
-  { id: 'catalyst',  scroll: [0.62, 0.72], color: PALETTE.amber,    center: [20, 9, -150],   count: 24, radius: 9  },
-  // The main event — a dense hub with six industry sub-clusters orbiting it.
-  { id: 'se',        scroll: [0.70, 0.90], color: PALETTE.purple,   center: [0, 0, -182],    count: 30, radius: 7, hub: true,
-    satellites: [
-      { label: 'Aviation',   offset: [-22, 14, -8],  color: PALETTE.purple },
-      { label: 'Healthcare', offset: [22, 14, -8],   color: PALETTE.indigo },
-      { label: 'Higher Ed',  offset: [-26, -6, 6],   color: 0x818cf8 },
-      { label: 'Enterprise', offset: [26, -6, 6],    color: 0x2563eb },
-      { label: 'Government', offset: [-14, -18, -4], color: 0x3b82f6 },
-      { label: 'Utilities',  offset: [16, -18, -4],  color: 0x60a5fa },
-    ] },
-  { id: 'skills',    scroll: [0.90, 0.955], color: PALETTE.slate,   center: [0, 0, -214],    count: 28, radius: 13 },
-  { id: 'close',     scroll: [0.955, 1.01], color: PALETTE.blue,    center: [0, 0, -240],    count: 20, radius: 11 },
+export const LANDMARKS = [
+  {
+    id: 'intro', kind: 'intro',
+    sign: 'The Green',
+    title: 'Brendan Hoss',
+    period: 'Solutions Engineer · Branford, CT',
+    accent: 0x4a9eff,
+    pos: [0, 0],
+    intro: "Every solution starts with someone who sees the connections others don't.",
+    points: [
+      'Welcome to a little walk through the work. Wander the town — each building is a chapter.',
+      'Use WASD or tap to walk, drag to look around.',
+    ],
+  },
+  {
+    id: 'gateway', kind: 'edu',
+    sign: 'Gateway CC',
+    title: 'The Foundation',
+    period: 'Gateway Community College · 2014–2017',
+    accent: 0x4a9eff,
+    pos: [-34, -20], face: Math.PI / 2,
+    intro: 'Where it started: Computer Science.',
+    points: ['Computer Science', "Dean's List", 'Phi Theta Kappa Honor Society'],
+  },
+  {
+    id: 'uconn', kind: 'edu',
+    sign: 'UConn',
+    title: 'Going Deeper',
+    period: 'University of Connecticut · 2018',
+    accent: 0x6bb8ff,
+    pos: [-34, -2], face: Math.PI / 2,
+    intro: '85 credits into Software Engineering.',
+    points: [
+      '85 credits toward a Software Engineering degree',
+      'Then a pivot — not away from tech, but toward something more practical.',
+    ],
+  },
+  {
+    id: 'veoci_se', kind: 'hero',
+    sign: 'Veoci',
+    title: 'Solutions Engineer',
+    period: 'Veoci Inc. · 2024–Present',
+    accent: 0x9f6aff,
+    pos: [0, -30], face: 0,
+    intro: 'The main event — designing, deploying, and expanding scalable no-code and automated platform solutions.',
+    stats: [
+      { num: 15, suffix: '+', label: 'Custom Solutions' },
+      { num: 30, suffix: '+', label: 'Client Demos' },
+      { num: 35, suffix: '%', label: 'Less Manual Entry' },
+      { num: 6, suffix: '', label: 'Industry Verticals' },
+    ],
+    achievements: [
+      'Built a Travel Registry product that opened a new revenue stream',
+      'Fortune 10 onsite engagement — discovery to expansion',
+      'Built Archimedes — AI orchestration cutting PoC cycles by ~2 weeks',
+      'Utility-sector market entry from zero',
+    ],
+    skills: ['n8n', 'REST APIs', 'Webhooks', 'Python', 'SQL', 'TensorFlow', 'Veoci', 'Solution Architecture', 'AI Tooling'],
+    verticals: ['Aviation', 'Healthcare', 'Higher Ed', 'Enterprise', 'Government', 'Utilities'],
+  },
+  {
+    id: 'lambda', kind: 'edu',
+    sign: 'Lambda School',
+    title: 'The Data Chapter',
+    period: 'Lambda School · Data Science · 2019–2020',
+    accent: 0x00d4aa,
+    pos: [34, -20], face: -Math.PI / 2,
+    intro: 'Python. TensorFlow. Neural networks.',
+    points: ['Data Science immersive', 'Python · TensorFlow', 'Neural networks & ML fundamentals'],
+  },
+  {
+    id: 'story', kind: 'work',
+    sign: 'Story Squad',
+    title: 'Story Squad',
+    period: 'Data Science Intern · 2021–2022',
+    accent: 0x00d4aa,
+    pos: [34, -2], face: -Math.PI / 2,
+    intro: 'Shipping ML in production.',
+    points: [
+      'Deployed a neural network for content moderation — in production',
+      'Built an image-clustering algorithm with unsupervised learning',
+    ],
+  },
+  {
+    id: 'yale', kind: 'work',
+    sign: 'Yale',
+    title: 'The Proving Ground',
+    period: 'Yale University · 2021–2023',
+    accent: 0x6bb8ff,
+    pos: [34, 16], face: -Math.PI / 2,
+    intro: '100+ patients daily. Epic EMR. Zero margin for error.',
+    points: [
+      'Test Site Coordinator & Site Lead',
+      'Led through a pandemic — 100+ patients daily on Epic EMR',
+      'What no classroom could teach about leadership under pressure',
+    ],
+  },
+  {
+    id: 'catalyst', kind: 'work',
+    sign: 'Veoci · Ops',
+    title: 'The Catalyst',
+    period: 'Office Manager & IT Coordinator · 2022–2024',
+    accent: 0xffb347,
+    pos: [-34, 16], face: Math.PI / 2,
+    intro: 'Joined Veoci as the person who fixes things.',
+    points: [
+      'Built the first internal automations',
+      'Eliminated 3 manual processes',
+      "…and realized: this is what I'm supposed to be doing.",
+    ],
+  },
+  {
+    id: 'contact', kind: 'contact',
+    sign: 'Harbor',
+    title: "Let's build something.",
+    period: 'Brendan Hoss',
+    accent: 0xffce6b,
+    pos: [-44, 38], face: 0.5,
+    intro: 'Find me here.',
+    email: 'hossbrendan@gmail.com',
+    linkedin: 'https://linkedin.com/in/brendan-hoss',
+  },
 ];
 
-// Camera flies a smooth curve sitting "behind" each cluster, looking forward
-// into the next chapter. Derived from phase centers so the two stay in sync.
-export function buildCameraPath() {
-  const eye = [];
-  const look = [];
-  // Opening shot: pulled back from the origin cluster.
-  eye.push([0, 1, 42]);
-  look.push([0, 0, 0]);
-  for (let i = 0; i < PHASES.length; i++) {
-    const c = PHASES[i].center;
-    const next = PHASES[Math.min(i + 1, PHASES.length - 1)].center;
-    // Sit slightly above and to the side, offset toward the previous cluster.
-    const side = i % 2 === 0 ? 1 : -1;
-    eye.push([c[0] + side * 6, c[1] + 4, c[2] + 24]);
-    // Look toward a point between this cluster and the next.
-    look.push([(c[0] + next[0]) / 2, (c[1] + next[1]) / 2, (c[2] + next[2]) / 2]);
-  }
-  return { eye, look };
-}
-
-export function hexToRgbNorm(hex) {
-  return [((hex >> 16) & 255) / 255, ((hex >> 8) & 255) / 255, (hex & 255) / 255];
-}
-
-// Accent color for the scroll progress bar / UI chrome at a given scroll %.
-export function accentAt(scroll) {
-  for (const p of PHASES) {
-    if (scroll >= p.scroll[0] && scroll < p.scroll[1]) return p.color;
-  }
-  return PHASES[PHASES.length - 1].color;
-}
+export const byId = Object.fromEntries(LANDMARKS.map((l) => [l.id, l]));

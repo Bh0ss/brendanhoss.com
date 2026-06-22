@@ -333,31 +333,9 @@ export function buildWorld(scene) {
   }
   for (let i = 0; i < 5; i++) { const f = flowers(); f.position.set((Math.random() - 0.5) * 26, 0, (Math.random() - 0.5) * 26); group.add(f); }
 
-  // ── Church to the north ──────────────────────────────────────────────────
-  const ch = church(); ch.position.set(-2, 0, -36); group.add(ch);
-  obstacles.push({ x: -2, z: -32, r: 6 });
-  anchors.push({ id: 'church', label: 'Church', x: -2, z: -28 });
-
-  // ── Main street of shops (east) + houses behind fences (west) ────────────
-  const shopRoofs = [BUILD.roofTerracotta, BUILD.roofSlate, BUILD.roofDark];
-  const shopWalls = [BUILD.cream, BUILD.brick, BUILD.sage, BUILD.blue];
-  let idx = 0;
-  for (let i = 0; i < 5; i++) {
-    const z = -16 + i * 9.5;
-    const b = building({ w: 6, d: 6, h: 4 + (i % 2), wall: shopWalls[i % shopWalls.length], roof: shopRoofs[i % shopRoofs.length] });
-    b.position.set(36, 0, z); b.rotation.y = -Math.PI / 2; group.add(b);
-    obstacles.push({ x: 36, z, r: b.userData.footprint });
-    anchors.push({ id: `shop${idx}`, label: `Shop ${idx + 1}`, x: 31, z }); idx++;
-  }
-  for (let i = 0; i < 4; i++) {
-    const z = -12 + i * 11;
-    const b = building({ w: 7, d: 6, h: 4, wall: shopWalls[(i + 1) % shopWalls.length], roof: shopRoofs[i % shopRoofs.length] });
-    b.position.set(-36, 0, z); b.rotation.y = Math.PI / 2; group.add(b);
-    obstacles.push({ x: -36, z, r: b.userData.footprint });
-    const fence = picketFence(8); fence.position.set(-30, 0, z); fence.rotation.y = Math.PI / 2; group.add(fence);
-    const fl = flowers(4); fl.position.set(-31, 0, z); group.add(fl);
-    anchors.push({ id: `house${i}`, label: `House ${i + 1}`, x: -31, z });
-  }
+  // ── Church (scenery) tucked to the north-west ────────────────────────────
+  const ch = church(); ch.position.set(-32, 0, -40); ch.rotation.y = 0.4; group.add(ch);
+  obstacles.push({ x: -32, z: -36, r: 6 });
 
   // ── Paths + lampposts ────────────────────────────────────────────────────
   group.add(pathStrip(0, -10, -2, -28, 4.5));
@@ -381,7 +359,9 @@ export function buildWorld(scene) {
     const r = 22 + Math.random() * 46;
     const x = Math.cos(a) * r, z = Math.sin(a) * r;
     if (z > SHORE_Z - 5) continue;
-    if (Math.abs(x) > 28 && Math.abs(x) < 42 && z > -22 && z < 34) continue;
+    if (Math.abs(x) > 28 && Math.abs(x) < 42 && z > -24 && z < 24) continue; // landmark streets
+    if (Math.abs(x) < 13 && z < -22) continue;  // Veoci (hero) plaza
+    if (x < -36 && z > 28) continue;            // harbor
     const t = Math.random() < 0.35 ? pine() : roundTree();
     t.position.set(x, 0, z); t.scale.setScalar(0.8 + Math.random() * 0.5);
     group.add(t); trees.push(t);

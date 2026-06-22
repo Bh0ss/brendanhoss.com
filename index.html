@@ -40,6 +40,19 @@
     <div class="ch-row"><span class="ch-tap">drag</span><span>to look around</span></div>
   </div>
 
+  <!-- Proximity prompt -->
+  <div id="prompt" class="hidden">
+    <span id="prompt-name"></span>
+    <span class="prompt-key"><kbd>E</kbd> read</span>
+  </div>
+
+  <!-- Content card -->
+  <div id="card-backdrop" class="hidden"></div>
+  <aside id="card" class="hidden" role="dialog" aria-modal="true">
+    <button id="card-close" aria-label="Close">×</button>
+    <div id="card-body"></div>
+  </aside>
+
   <!-- No-WebGL fallback -->
   <div id="fallback">
     <h1>Brendan Hoss</h1>
