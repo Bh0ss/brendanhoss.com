@@ -1,0 +1,17 @@
+{
+  "name": "brendanhoss-com",
+  "version": "2.0.0",
+  "description": "Brendan Hoss — personal site. Three.js career-network experience.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^6.0.7"
+  },
+  "dependencies": {
+    "three": "^0.171.0"
+  }
+}
