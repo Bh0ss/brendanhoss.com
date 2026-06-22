@@ -15,6 +15,20 @@ try {
   document.body.classList.add('no-webgl');
 }
 
+// ── Preloader → reveal → trigger the constellation's intro assembly ───────
+const preloader = document.getElementById('preloader');
+let revealed = false;
+function reveal() {
+  if (revealed) return;
+  revealed = true;
+  document.body.classList.add('ready');
+  if (net) net.start();
+  if (preloader) setTimeout(() => preloader.classList.add('hidden'), 60);
+}
+if (document.readyState === 'complete') setTimeout(reveal, 400);
+else window.addEventListener('load', () => setTimeout(reveal, 400));
+setTimeout(reveal, 2600); // hard fallback so we never get stuck on the loader
+
 // ── Scroll state (smoothed) ───────────────────────────────────────────────
 let scroll = 0;
 let targetScroll = 0;

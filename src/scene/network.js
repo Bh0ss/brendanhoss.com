@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { PHASES, PALETTE, buildCameraPath, hexToRgbNorm } from '../data.js';
 
@@ -49,8 +51,38 @@ const POINT_FRAG = /* glsl */ `
   }
 `;
 
+// Final cinematic grade: gentle saturation lift, vignette, fine film grain.
+const GRADE_SHADER = {
+  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uAmount: { value: 1 } },
+  vertexShader: /* glsl */ `
+    varying vec2 vUv;
+    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+  `,
+  fragmentShader: /* glsl */ `
+    uniform sampler2D tDiffuse;
+    uniform float uTime;
+    uniform float uAmount;
+    varying vec2 vUv;
+    float rand(vec2 c) { return fract(sin(dot(c, vec2(12.9898, 78.233))) * 43758.5453); }
+    void main() {
+      vec4 col = texture2D(tDiffuse, vUv);
+      float l = dot(col.rgb, vec3(0.299, 0.587, 0.114));
+      col.rgb = mix(vec3(l), col.rgb, 1.12);                 // saturation
+      vec2 q = vUv - 0.5;
+      float vig = smoothstep(0.95, 0.32, length(q));
+      col.rgb *= mix(0.82, 1.0, vig);                         // vignette
+      // Fine grain, mostly in midtones/highlights so darks stay clean.
+      float g = (rand(vUv + fract(uTime * 0.001)) - 0.5) * 0.018;
+      col.rgb += g * (0.25 + 0.75 * l) * uAmount;             // film grain
+      gl_FragColor = col;
+    }
+  `,
+};
+
 function clamp01(v) { return Math.max(0, Math.min(1, v)); }
 function lerp(a, b, t) { return a + (b - a) * t; }
+function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+function smoothstep(e0, e1, x) { const t = clamp01((x - e0) / (e1 - e0)); return t * t * (3 - 2 * t); }
 
 export class CareerNetwork {
   constructor(canvas, opts = {}) {
@@ -59,13 +91,17 @@ export class CareerNetwork {
     this.reducedMotion = opts.reducedMotion || false;
     this.scroll = 0;
     this.time = 0;
+    this.introT = this.reducedMotion ? 1 : 0;
+    this.introRunning = false;
     this.mouse = new THREE.Vector2(0, 0);
     this.mouseTarget = new THREE.Vector2(0, 0);
     this._tmpEye = new THREE.Vector3();
     this._tmpLook = new THREE.Vector3();
+    this._proj = new THREE.Vector3();
 
     this._initRenderer();
     this._initScene();
+    this._buildStarfield();
     this._buildNodes();
     this._buildEdges();
     this._buildPulses();
@@ -76,18 +112,16 @@ export class CareerNetwork {
   _initRenderer() {
     this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas,
-      antialias: !this.mobile,
+      antialias: false, // SMAA handles AA in the composer
       alpha: false,
       powerPreference: 'high-performance',
     });
-    this.dpr = Math.min(window.devicePixelRatio || 1, this.mobile ? 2 : 2);
+    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
     this.renderer.setPixelRatio(this.dpr);
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setClearColor(PALETTE.bg, 1);
   }
 
-  // Point size in framebuffer px = aSize * uScale / dist. uScale maps a
-  // world-space size to pixels at unit distance for the current viewport.
   _pointScale() {
     return (window.innerHeight * this.dpr) / (2 * Math.tan((this.fov * Math.PI / 180) / 2));
   }
@@ -96,13 +130,47 @@ export class CareerNetwork {
     this.fov = 60;
     this.scene = new THREE.Scene();
     this.scene.fog = new THREE.FogExp2(PALETTE.bg, 0.0042);
-    this.camera = new THREE.PerspectiveCamera(this.fov, window.innerWidth / window.innerHeight, 0.1, 1000);
+    this.camera = new THREE.PerspectiveCamera(this.fov, window.innerWidth / window.innerHeight, 0.1, 1200);
     this.camera.position.set(0, 1, 42);
 
     const path = buildCameraPath();
     this.eyeCurve = new THREE.CatmullRomCurve3(path.eye.map((p) => new THREE.Vector3(...p)));
     this.lookCurve = new THREE.CatmullRomCurve3(path.look.map((p) => new THREE.Vector3(...p)));
     this.glowTex = makeGlowTexture();
+  }
+
+  // ── Distant dust/stars for parallax depth behind the network ─────────────
+  _buildStarfield() {
+    const count = this.mobile ? 600 : 1400;
+    const pos = new Float32Array(count * 3);
+    const col = new Float32Array(count * 3);
+    const size = new Float32Array(count);
+    const opac = new Float32Array(count);
+    const tint = [hexToRgbNorm(PALETTE.blue), hexToRgbNorm(PALETTE.clinical), [0.8, 0.85, 1.0]];
+    for (let i = 0; i < count; i++) {
+      // Spread through the whole flight volume, pushed outward from the path.
+      pos[i * 3] = (Math.random() - 0.5) * 260;
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 180;
+      pos[i * 3 + 2] = 60 - Math.random() * 360;
+      const t = tint[(Math.random() * tint.length) | 0];
+      const b = 0.5 + Math.random() * 0.5;
+      col[i * 3] = t[0] * b; col[i * 3 + 1] = t[1] * b; col[i * 3 + 2] = t[2] * b;
+      size[i] = 0.18 + Math.random() * 0.4;
+      opac[i] = 0.25 + Math.random() * 0.5;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('aColor', new THREE.BufferAttribute(col, 3));
+    geo.setAttribute('aSize', new THREE.BufferAttribute(size, 1));
+    geo.setAttribute('aOpacity', new THREE.BufferAttribute(opac, 1));
+    this.starMat = new THREE.ShaderMaterial({
+      uniforms: { uTex: { value: this.glowTex }, uScale: { value: this._pointScale() } },
+      vertexShader: POINT_VERT, fragmentShader: POINT_FRAG,
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    });
+    this.stars = new THREE.Points(geo, this.starMat);
+    this.stars.frustumCulled = false;
+    this.scene.add(this.stars);
   }
 
   // ── Nodes: one Points cloud for the whole constellation ─────────────────
@@ -115,33 +183,33 @@ export class CareerNetwork {
         for (const s of phase.satellites) {
           groups.push({
             center: [phase.center[0] + s.offset[0], phase.center[1] + s.offset[1], phase.center[2] + s.offset[2]],
-            color: s.color,
-            count: Math.round(7 * qty),
-            radius: 5,
+            color: s.color, count: Math.round(7 * qty), radius: 5,
           });
         }
       }
       for (const g of groups) {
         const n = Math.max(4, Math.round(g.count * qty));
         for (let i = 0; i < n; i++) {
-          // Distribute in a soft 3D blob around the cluster center.
           const r = g.radius * Math.cbrt(Math.random());
           const theta = Math.random() * Math.PI * 2;
           const phi = Math.acos(2 * Math.random() - 1);
           const x = g.center[0] + r * Math.sin(phi) * Math.cos(theta);
           const y = g.center[1] + r * Math.sin(phi) * Math.sin(theta);
           const z = g.center[2] + r * Math.cos(phi);
+          const home = new THREE.Vector3(x, y, z);
+          // Intro: each node starts scattered far out, then assembles to home.
+          const sdir = new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize();
+          const scatter = home.clone().add(sdir.multiplyScalar(40 + Math.random() * 90));
           nodes.push({
             phase: pi,
-            home: new THREE.Vector3(x, y, z),
+            home, scatter,
             color: g.color,
             size: phase.hub && g === groups[0] && i === 0 ? 4.6 : 0.5 + Math.random() * 1.0,
             birth: phase.scroll[0] - 0.04,
+            glow: 0,
             drift: {
-              ax: Math.random() * Math.PI * 2,
-              ay: Math.random() * Math.PI * 2,
-              sx: 0.2 + Math.random() * 0.4,
-              sy: 0.2 + Math.random() * 0.4,
+              ax: Math.random() * Math.PI * 2, ay: Math.random() * Math.PI * 2,
+              sx: 0.2 + Math.random() * 0.4, sy: 0.2 + Math.random() * 0.4,
               amp: 0.5 + Math.random() * 1.4,
             },
           });
@@ -155,15 +223,11 @@ export class CareerNetwork {
     const colors = new Float32Array(count * 3);
     const sizes = new Float32Array(count);
     const opacities = new Float32Array(count);
-
     nodes.forEach((nd, i) => {
-      positions[i * 3] = nd.home.x;
-      positions[i * 3 + 1] = nd.home.y;
-      positions[i * 3 + 2] = nd.home.z;
+      positions[i * 3] = nd.scatter.x; positions[i * 3 + 1] = nd.scatter.y; positions[i * 3 + 2] = nd.scatter.z;
       const [r, g, b] = hexToRgbNorm(nd.color);
       colors[i * 3] = r; colors[i * 3 + 1] = g; colors[i * 3 + 2] = b;
-      sizes[i] = nd.size;
-      opacities[i] = 0;
+      sizes[i] = nd.size; opacities[i] = 0;
     });
 
     const geo = new THREE.BufferGeometry();
@@ -173,29 +237,19 @@ export class CareerNetwork {
     geo.setAttribute('aOpacity', new THREE.BufferAttribute(opacities, 1));
 
     this.nodeMat = new THREE.ShaderMaterial({
-      uniforms: {
-        uTex: { value: this.glowTex },
-        uScale: { value: this._pointScale() },
-      },
-      vertexShader: POINT_VERT,
-      fragmentShader: POINT_FRAG,
-      transparent: true,
-      depthWrite: false,
-      depthTest: true,
-      blending: THREE.AdditiveBlending,
+      uniforms: { uTex: { value: this.glowTex }, uScale: { value: this._pointScale() } },
+      vertexShader: POINT_VERT, fragmentShader: POINT_FRAG,
+      transparent: true, depthWrite: false, depthTest: true, blending: THREE.AdditiveBlending,
     });
-
     this.nodeGeo = geo;
     this.nodePoints = new THREE.Points(geo, this.nodeMat);
     this.nodePoints.frustumCulled = false;
     this.scene.add(this.nodePoints);
   }
 
-  // ── Edges: connect nearby nodes + bridge consecutive clusters ───────────
   _buildEdges() {
     const edges = [];
     const maxDist = this.mobile ? 14 : 16;
-    // Intra-cluster links (only test within the same phase to stay cheap).
     const byPhase = {};
     this.nodes.forEach((n, i) => { (byPhase[n.phase] = byPhase[n.phase] || []).push(i); });
     for (const key in byPhase) {
@@ -208,8 +262,6 @@ export class CareerNetwork {
         }
       }
     }
-    // Bridges between consecutive phases (a couple of dim links to show the
-    // throughline without dominating the frame). Flagged so they render faint.
     for (let p = 0; p < PHASES.length - 1; p++) {
       const here = byPhase[p] || [];
       const next = byPhase[p + 1] || [];
@@ -226,18 +278,14 @@ export class CareerNetwork {
     this.edgeGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     this.edgeGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     this.edgeMat = new THREE.LineBasicMaterial({
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.5,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
+      vertexColors: true, transparent: true, opacity: 0.5,
+      blending: THREE.AdditiveBlending, depthWrite: false,
     });
     this.edgeLines = new THREE.LineSegments(this.edgeGeo, this.edgeMat);
     this.edgeLines.frustumCulled = false;
     this.scene.add(this.edgeLines);
   }
 
-  // ── Signal pulses traveling along edges ─────────────────────────────────
   _buildPulses() {
     this.pulseCount = this.reducedMotion ? 0 : (this.mobile ? 26 : 60);
     const positions = new Float32Array(Math.max(1, this.pulseCount) * 3);
@@ -245,10 +293,7 @@ export class CareerNetwork {
     const sizes = new Float32Array(Math.max(1, this.pulseCount));
     const opacities = new Float32Array(Math.max(1, this.pulseCount));
     this.pulses = [];
-    for (let i = 0; i < this.pulseCount; i++) {
-      this.pulses.push(this._spawnPulse());
-      sizes[i] = 0.7;
-    }
+    for (let i = 0; i < this.pulseCount; i++) { this.pulses.push(this._spawnPulse()); sizes[i] = 0.7; }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geo.setAttribute('aColor', new THREE.BufferAttribute(colors, 3));
@@ -273,11 +318,13 @@ export class CareerNetwork {
     this.composer.addPass(new RenderPass(this.scene, this.camera));
     this.bloom = new UnrealBloomPass(
       new THREE.Vector2(window.innerWidth, window.innerHeight),
-      this.mobile ? 0.55 : 0.75, // strength
-      0.55,                       // radius
-      0.22                        // threshold — only bright cores bloom
+      this.mobile ? 0.55 : 0.72, 0.6, 0.2
     );
     this.composer.addPass(this.bloom);
+    this.gradePass = new ShaderPass(GRADE_SHADER);
+    this.gradePass.uniforms.uAmount.value = this.mobile ? 0.6 : 1;
+    this.composer.addPass(this.gradePass);
+    if (!this.mobile) this.composer.addPass(new SMAAPass(window.innerWidth, window.innerHeight));
     this.composer.addPass(new OutputPass());
   }
 
@@ -286,64 +333,99 @@ export class CareerNetwork {
     window.addEventListener('resize', this._onResize);
     if (!this.mobile) {
       window.addEventListener('pointermove', (e) => {
-        this.mouseTarget.set(
-          (e.clientX / window.innerWidth) * 2 - 1,
-          (e.clientY / window.innerHeight) * 2 - 1
-        );
+        this.mouseTarget.set((e.clientX / window.innerWidth) * 2 - 1, (e.clientY / window.innerHeight) * 2 - 1);
       });
     }
   }
 
+  start() { this.introRunning = true; }
   setScroll(s) { this.scroll = clamp01(s); }
 
+  // Brightness of a node's chapter at the current scroll (active chapter pops).
+  _phaseFocus(pi) {
+    const [a, b] = PHASES[pi].scroll;
+    const mid = (a + b) / 2, half = (b - a) / 2 + 0.05;
+    return 0.55 + 0.45 * smoothstep(half, 0, Math.abs(this.scroll - mid));
+  }
+
   update(dt) {
-    this.time += dt;
+    this.time += dt * 1000;
     const t = this.scroll;
 
-    // ── Camera: fly the curve, with smoothed mouse parallax ──────────────
+    // Intro assembly progress.
+    if (this.introRunning && this.introT < 1) {
+      this.introT = Math.min(1, this.introT + dt / 2.2);
+    }
+    const intro = easeOutCubic(this.introT);
+
+    // Camera fly-through + smoothed mouse parallax (eased in after intro).
     this.eyeCurve.getPoint(t, this._tmpEye);
     this.lookCurve.getPoint(t, this._tmpLook);
     this.mouse.lerp(this.mouseTarget, 0.05);
-    const par = this.reducedMotion ? 0 : 1;
+    const par = this.reducedMotion ? 0 : intro;
+    const introPull = (1 - intro) * 18; // start a touch further back, glide in
     this.camera.position.set(
       this._tmpEye.x + this.mouse.x * 6 * par,
       this._tmpEye.y - this.mouse.y * 4 * par,
-      this._tmpEye.z
+      this._tmpEye.z + introPull
     );
     this.camera.lookAt(
       this._tmpLook.x + this.mouse.x * 2 * par,
       this._tmpLook.y - this.mouse.y * 1.5 * par,
       this._tmpLook.z
     );
+    this.camera.updateMatrixWorld();
+    this.camera.matrixWorldInverse.copy(this.camera.matrixWorld).invert();
+    const aspect = window.innerWidth / window.innerHeight;
+    const mNdcX = this.mouse.x, mNdcY = -this.mouse.y;
+    const cursorOn = !this.reducedMotion && intro > 0.6;
 
-    // ── Node birth + drift ───────────────────────────────────────────────
+    // Nodes: assemble, drift, chapter-focus, cursor reactivity.
     const pos = this.nodeGeo.attributes.position.array;
     const op = this.nodeGeo.attributes.aOpacity.array;
     const driftOn = this.reducedMotion ? 0 : 1;
     for (let i = 0; i < this.nodes.length; i++) {
       const nd = this.nodes[i];
-      op[i] = clamp01((t - nd.birth) / 0.05);
+      const baseOp = clamp01((t - nd.birth) / 0.05) * this._phaseFocus(nd.phase);
       const d = nd.drift;
-      const dx = Math.cos(d.ax + this.time * d.sx) * d.amp * driftOn;
-      const dy = Math.sin(d.ay + this.time * d.sy) * d.amp * driftOn;
-      pos[i * 3] = nd.home.x + dx;
-      pos[i * 3 + 1] = nd.home.y + dy;
-      pos[i * 3 + 2] = nd.home.z;
+      const dx = Math.cos(d.ax + this.time * 0.001 * d.sx) * d.amp * driftOn;
+      const dy = Math.sin(d.ay + this.time * 0.001 * d.sy) * d.amp * driftOn;
+      const hx = lerp(nd.scatter.x, nd.home.x + dx, intro);
+      const hy = lerp(nd.scatter.y, nd.home.y + dy, intro);
+      const hz = lerp(nd.scatter.z, nd.home.z, intro);
+
+      // Cursor glow: brighten + lean toward pointer when near it on screen.
+      let glowTarget = 0, leanX = 0, leanY = 0;
+      if (cursorOn && baseOp > 0.05) {
+        this._proj.set(nd.home.x, nd.home.y, nd.home.z).project(this.camera);
+        if (this._proj.z < 1) {
+          const ddx = (this._proj.x - mNdcX) * aspect;
+          const ddy = this._proj.y - mNdcY;
+          const dist = Math.sqrt(ddx * ddx + ddy * ddy);
+          const prox = 1 - smoothstep(0.0, 0.4, dist);
+          glowTarget = prox;
+          leanX = -ddx * prox * 3.2;
+          leanY = ddy * prox * 3.2;
+        }
+      }
+      nd.glow += (glowTarget - nd.glow) * 0.12;
+      pos[i * 3] = hx + leanX;
+      pos[i * 3 + 1] = hy + leanY;
+      pos[i * 3 + 2] = hz;
+      op[i] = clamp01(baseOp * (1 + nd.glow * 1.4));
     }
     this.nodeGeo.attributes.position.needsUpdate = true;
     this.nodeGeo.attributes.aOpacity.needsUpdate = true;
 
-    // ── Edges follow their endpoints; brightness tracks node births ──────
+    // Edges follow endpoints; brightness tracks node visibility.
     const ep = this.edgeGeo.attributes.position.array;
     const ec = this.edgeGeo.attributes.color.array;
     for (let i = 0; i < this.edges.length; i++) {
       const [a, b, isBridge] = this.edges[i];
-      const oa = op[a], ob = op[b];
-      const bright = Math.min(oa, ob);
-      ep[i * 6] = pos[a * 3];     ep[i * 6 + 1] = pos[a * 3 + 1]; ep[i * 6 + 2] = pos[a * 3 + 2];
+      const bright = Math.min(op[a], op[b]);
+      ep[i * 6] = pos[a * 3]; ep[i * 6 + 1] = pos[a * 3 + 1]; ep[i * 6 + 2] = pos[a * 3 + 2];
       ep[i * 6 + 3] = pos[b * 3]; ep[i * 6 + 4] = pos[b * 3 + 1]; ep[i * 6 + 5] = pos[b * 3 + 2];
-      const ca = this.nodes[a].color;
-      const [r, g, bl] = hexToRgbNorm(ca);
+      const [r, g, bl] = hexToRgbNorm(this.nodes[a].color);
       const k = bright * (isBridge ? 0.16 : 0.55);
       ec[i * 6] = r * k; ec[i * 6 + 1] = g * k; ec[i * 6 + 2] = bl * k;
       ec[i * 6 + 3] = r * k; ec[i * 6 + 4] = g * k; ec[i * 6 + 5] = bl * k;
@@ -351,7 +433,7 @@ export class CareerNetwork {
     this.edgeGeo.attributes.position.needsUpdate = true;
     this.edgeGeo.attributes.color.needsUpdate = true;
 
-    // ── Pulses ───────────────────────────────────────────────────────────
+    // Pulses.
     if (this.pulseCount > 0) {
       const pp = this.pulseGeo.attributes.position.array;
       const pc = this.pulseGeo.attributes.aColor.array;
@@ -361,9 +443,7 @@ export class CareerNetwork {
         pu.t += pu.speed * dt;
         if (pu.t >= 1) { this.pulses[i] = this._spawnPulse(); continue; }
         const [a, b] = pu.edge;
-        const av = clamp01((t - this.nodes[a].birth) / 0.05);
-        const bv = clamp01((t - this.nodes[b].birth) / 0.05);
-        const vis = Math.min(av, bv);
+        const vis = Math.min(op[a], op[b]) * intro;
         pp[i * 3] = lerp(pos[a * 3], pos[b * 3], pu.t);
         pp[i * 3 + 1] = lerp(pos[a * 3 + 1], pos[b * 3 + 1], pu.t);
         pp[i * 3 + 2] = lerp(pos[a * 3 + 2], pos[b * 3 + 2], pu.t);
@@ -376,6 +456,9 @@ export class CareerNetwork {
       this.pulseGeo.attributes.aOpacity.needsUpdate = true;
     }
 
+    // Starfield drifts very slowly for life.
+    if (this.stars && !this.reducedMotion) this.stars.rotation.y = this.time * 0.000004;
+    this.gradePass.uniforms.uTime.value = this.time;
     this.composer.render();
   }
 
@@ -388,6 +471,7 @@ export class CareerNetwork {
     this.bloom.setSize(w, h);
     this.nodeMat.uniforms.uScale.value = this._pointScale();
     this.pulseMat.uniforms.uScale.value = this._pointScale();
+    this.starMat.uniforms.uScale.value = this._pointScale();
   }
 
   dispose() {
