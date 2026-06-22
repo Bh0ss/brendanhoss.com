@@ -66,9 +66,12 @@ export function createComposer(renderer, scene, camera, { mobile = false } = {})
     composer.addPass(gtao);
   }
 
-  // Subtle bloom — sun glints on water, sky lift. Keep it gentle.
-  const bloom = new UnrealBloomPass(new THREE.Vector2(W, H), 0.32, 0.7, 0.82);
-  composer.addPass(bloom);
+  // Subtle bloom — sun glints on water, sky lift. Desktop only (mip-chain cost).
+  let bloom = null;
+  if (!mobile) {
+    bloom = new UnrealBloomPass(new THREE.Vector2(W, H), 0.32, 0.7, 0.82);
+    composer.addPass(bloom);
+  }
 
   // Tone-map + sRGB here so subsequent passes operate on display-ready color.
   composer.addPass(new OutputPass());
@@ -76,14 +79,18 @@ export function createComposer(renderer, scene, camera, { mobile = false } = {})
   composer.addPass(new ShaderPass(ColorGradeShader));
 
   // Tilt-shift: blur grows with vertical distance from a sharp focus band.
-  const BLUR = mobile ? 1.4 : 2.0;
+  // Two full-screen passes — desktop only.
+  const BLUR = 2.0;
   const focus = 0.62; // screen-height of the focus band (roughly the character)
-  const hts = new ShaderPass(HorizontalTiltShiftShader);
-  hts.uniforms.r.value = focus; hts.uniforms.h.value = BLUR / W;
-  composer.addPass(hts);
-  const vts = new ShaderPass(VerticalTiltShiftShader);
-  vts.uniforms.r.value = focus; vts.uniforms.v.value = BLUR / H;
-  composer.addPass(vts);
+  let hts = null, vts = null;
+  if (!mobile) {
+    hts = new ShaderPass(HorizontalTiltShiftShader);
+    hts.uniforms.r.value = focus; hts.uniforms.h.value = BLUR / W;
+    composer.addPass(hts);
+    vts = new ShaderPass(VerticalTiltShiftShader);
+    vts.uniforms.r.value = focus; vts.uniforms.v.value = BLUR / H;
+    composer.addPass(vts);
+  }
 
   const vig = new ShaderPass(VignetteShader);
   vig.uniforms.offset.value = 1.1;
@@ -95,8 +102,8 @@ export function createComposer(renderer, scene, camera, { mobile = false } = {})
   function resize(w, h) {
     composer.setSize(w, h);
     gtao?.setSize?.(w, h);
-    hts.uniforms.h.value = BLUR / w;
-    vts.uniforms.v.value = BLUR / h;
+    if (hts) hts.uniforms.h.value = BLUR / w;
+    if (vts) vts.uniforms.v.value = BLUR / h;
   }
 
   return { composer, bloom, gtao, resize };

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Brendan Hoss — Solutions Engineer</title>
   <meta name="description" content="Brendan Hoss — Solutions Engineer. Walk through a little shoreline town and explore the work: no-code platform solutions, n8n automation, and AI-driven tooling." />
   <meta property="og:title" content="Brendan Hoss — Solutions Engineer" />
@@ -72,16 +72,14 @@
     <div id="card-body"></div>
   </aside>
 
-  <!-- No-WebGL fallback -->
-  <div id="fallback">
-    <h1>Brendan Hoss</h1>
-    <p>Solutions Engineer · Branford, CT</p>
-    <p class="fb-note">This experience needs WebGL. Here's the short version:
-      no-code platform solutions, n8n automation, and AI-driven tooling across
-      aviation, healthcare, higher ed, enterprise, government, and utilities.</p>
-    <p><a href="/resume.pdf" download>Download résumé</a> ·
-       <a href="https://linkedin.com/in/brendan-hoss" target="_blank" rel="noopener">LinkedIn</a></p>
+  <!-- Banner shown only when WebGL is unavailable -->
+  <div id="fallback-banner" aria-hidden="false">
+    This is an interactive 3D experience, but your browser can't run it — here's everything directly:
   </div>
+
+  <!-- Full content as real semantic HTML: reachable by screen readers, search
+       engines, ATS, and as the no-WebGL fallback. Populated from data.js. -->
+  <main id="resume" class="sr-only" aria-label="Brendan Hoss — Solutions Engineer"></main>
 
   <script type="module" src="/src/main.js"></script>
 </body>

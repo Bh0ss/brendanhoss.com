@@ -91,6 +91,13 @@ export class Town {
     addEventListener('resize', () => this.resize());
     this._updateCamera(1, true);
 
+    // Pause cleanly on GPU context loss; resume when restored (avoids a
+    // permanent black screen on a laptop GPU reset / mobile backgrounding).
+    canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); this.running = false; });
+    canvas.addEventListener('webglcontextrestored', () => {
+      if (this._loop && !this.running) { this.running = true; this._last = performance.now(); requestAnimationFrame(this._loop); }
+    });
+
     // Post stack — degrade gracefully to direct rendering if it fails.
     try {
       this.post = createComposer(this.renderer, this.scene, this.camera, { mobile });
@@ -107,7 +114,7 @@ export class Town {
     const sun = new THREE.DirectionalLight(0xfff2d6, 1.7);
     sun.position.copy(this.sunDir).multiplyScalar(80);
     sun.castShadow = true;
-    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.mapSize.set(this.mobile ? 1024 : 2048, this.mobile ? 1024 : 2048);
     const s = 95;
     sun.shadow.camera.left = -s; sun.shadow.camera.right = s;
     sun.shadow.camera.top = s; sun.shadow.camera.bottom = -s;
@@ -149,8 +156,13 @@ export class Town {
     this._last = performance.now();
     this._loop = this._loop.bind(this);
     requestAnimationFrame(this._loop);
-    // Welcome card on first arrival.
-    setTimeout(() => this.ui.openCard(byId.intro), 650);
+    // Welcome card on first visit only.
+    let seen = false;
+    try { seen = localStorage.getItem('bh_seen_intro') === '1'; } catch (_) { /* private mode */ }
+    if (!seen) {
+      setTimeout(() => this.ui.openCard(byId.intro), 650);
+      try { localStorage.setItem('bh_seen_intro', '1'); } catch (_) { /* ignore */ }
+    }
   }
 
   resize() {

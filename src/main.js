@@ -1,5 +1,32 @@
 import './style.css';
 import { Town } from './town/Town.js';
+import { LANDMARKS } from './data.js';
+
+// Render all content as real semantic HTML (always present, visually hidden by
+// default) so screen readers, search engines, ATS, and no-WebGL visitors get
+// the full story — not just what the 3D world surfaces.
+(function buildResume() {
+  const el = document.getElementById('resume');
+  if (!el) return;
+  const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  let h = `<h1>Brendan Hoss</h1><p class="r-sub">Solutions Engineer · Branford, CT</p>`;
+  for (const lm of LANDMARKS) {
+    if (lm.id === 'intro') continue;
+    h += `<section><h2>${esc(lm.title)}</h2>`;
+    if (lm.period) h += `<p class="r-period">${esc(lm.period)}</p>`;
+    if (lm.intro) h += `<p>${esc(lm.intro)}</p>`;
+    if (lm.points) h += '<ul>' + lm.points.map((p) => `<li>${esc(p)}</li>`).join('') + '</ul>';
+    if (lm.stats) h += '<ul>' + lm.stats.map((s) => `<li>${esc(s.num + s.suffix)} — ${esc(s.label)}</li>`).join('') + '</ul>';
+    if (lm.achievements) h += '<ul>' + lm.achievements.map((a) => `<li>${esc(a)}</li>`).join('') + '</ul>';
+    if (lm.verticals) h += `<p><strong>Industries:</strong> ${esc(lm.verticals.join(', '))}</p>`;
+    if (lm.skills) h += `<p><strong>Toolkit:</strong> ${esc(lm.skills.join(', '))}</p>`;
+    if (lm.email) h += `<p>Email: <a href="mailto:${esc(lm.email)}">${esc(lm.email)}</a></p>`;
+    if (lm.linkedin) h += `<p><a href="${esc(lm.linkedin)}" rel="noopener noreferrer">LinkedIn</a></p>`;
+    h += '</section>';
+  }
+  h += `<p><a href="/resume.pdf" download="Brendan_Hoss_Resume_2026.pdf">Download résumé (PDF)</a></p>`;
+  el.innerHTML = h;
+})();
 
 const mobile = window.matchMedia('(max-width: 768px)').matches || window.innerWidth < 768;
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;

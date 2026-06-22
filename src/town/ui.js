@@ -2,11 +2,22 @@
 // landmark is nearby (setPrompt) and asks it to open/close the card. Keeps all
 // HTML/string-building out of the 3D code.
 
-function esc(s) { return String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
+function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+// Only allow safe schemes in hrefs (defends a future data.js edit from a
+// javascript: URL slipping into the card).
+function safeUrl(u) {
+  try {
+    const x = new URL(u, location.href);
+    return ['https:', 'http:', 'mailto:'].includes(x.protocol) ? x.href : '#';
+  } catch { return '#'; }
+}
+
+const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function renderCard(lm) {
   const head = `<div class="card-eyebrow" style="color:#${lm.accent.toString(16).padStart(6, '0')}">${esc(lm.period || '')}</div>
-    <h2 class="card-title">${esc(lm.title)}</h2>`;
+    <h2 class="card-title" id="card-title-h">${esc(lm.title)}</h2>`;
   const intro = lm.intro ? `<p class="card-intro">${esc(lm.intro)}</p>` : '';
 
   let body = '';
@@ -15,7 +26,7 @@ function renderCard(lm) {
   }
   if (lm.stats) {
     body += '<div class="card-stats">' + lm.stats.map((s) =>
-      `<div class="stat"><div class="stat-num" data-num="${s.num}" data-suffix="${s.suffix}">0${s.suffix}</div><div class="stat-label">${esc(s.label)}</div></div>`
+      `<div class="stat"><div class="stat-num" data-num="${esc(String(s.num))}" data-suffix="${esc(String(s.suffix))}">${esc('0' + s.suffix)}</div><div class="stat-label">${esc(s.label)}</div></div>`
     ).join('') + '</div>';
   }
   if (lm.achievements) {
@@ -34,7 +45,7 @@ function renderCard(lm) {
   let actions = '';
   if (lm.kind === 'hero' || lm.kind === 'contact') {
     const parts = [`<a class="btn btn-primary" href="/resume.pdf" download="Brendan_Hoss_Resume_2026.pdf">Download résumé</a>`];
-    if (lm.linkedin) parts.push(`<a class="btn" href="${esc(lm.linkedin)}" target="_blank" rel="noopener">LinkedIn</a>`);
+    if (lm.linkedin) parts.push(`<a class="btn" href="${safeUrl(lm.linkedin)}" target="_blank" rel="noopener noreferrer">LinkedIn</a>`);
     if (lm.email) parts.push(`<a class="btn" href="mailto:${esc(lm.email)}">Email</a>`);
     actions = `<div class="card-actions">${parts.join('')}</div>`;
   }
@@ -49,6 +60,7 @@ function animateCounters(root) {
   for (const el of root.querySelectorAll('.stat-num')) {
     const target = parseInt(el.dataset.num, 10);
     const suffix = el.dataset.suffix || '';
+    if (reduceMotion()) { el.textContent = target + suffix; continue; }
     const start = performance.now();
     const step = (now) => {
       const p = Math.min((now - start) / 1100, 1);
@@ -70,6 +82,18 @@ export function createUI(audio = null) {
 
   let currentPrompt = null;
   let open = false;
+  let lastFocused = null;
+
+  // Trap Tab within the card while it's open.
+  function onTrap(e) {
+    if (!open || e.code !== 'Tab') return;
+    const f = card.querySelectorAll('a[href], button, [tabindex]:not([tabindex="-1"])');
+    if (!f.length) return;
+    const first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+  card.addEventListener('keydown', onTrap);
 
   function setPrompt(lm) {
     currentPrompt = lm;
@@ -84,21 +108,29 @@ export function createUI(audio = null) {
   function openCard(lm) {
     if (!lm) return;
     open = true;
+    lastFocused = document.activeElement;
     cardBody.innerHTML = renderCard(lm);
+    card.setAttribute('aria-labelledby', 'card-title-h');
     card.classList.remove('hidden');
     backdrop.classList.remove('hidden');
     prompt.classList.add('hidden');
     audio?.ui('open');
-    requestAnimationFrame(() => { card.classList.add('shown'); animateCounters(cardBody); });
+    requestAnimationFrame(() => {
+      card.classList.add('shown');
+      animateCounters(cardBody);
+      closeBtn.focus();
+    });
   }
 
   function closeCard() {
+    if (!open) return;
     open = false;
     card.classList.remove('shown');
     backdrop.classList.add('hidden');
     setTimeout(() => card.classList.add('hidden'), 260);
     audio?.ui('close');
     setPrompt(currentPrompt);
+    if (lastFocused && lastFocused.focus) lastFocused.focus();
   }
 
   closeBtn.addEventListener('click', closeCard);
