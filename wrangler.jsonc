@@ -1,11 +1,16 @@
 {
   // Cloudflare Workers static-assets config for brendanhoss.com.
   // Serves the Vite production build (./dist) as static assets — no Worker
-  // script. Workers Builds runs `npm run build` (set as the Build command in
-  // the dashboard) to produce ./dist, then deploys these assets.
+  // script. The build hook below runs `npm run build` automatically as part of
+  // `wrangler deploy`, so both local deploys AND the git-connected Workers
+  // Builds pipeline produce ./dist before deploying. No dashboard build command
+  // is required, and a plain `git push` to master deploys the site.
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "website-1",
   "compatibility_date": "2026-06-01",
+  "build": {
+    "command": "npm install --no-audit --no-fund && npm run build"
+  },
   "assets": {
     "directory": "./dist",
     "not_found_handling": "single-page-application"
