@@ -5,9 +5,9 @@ import * as THREE from 'three';
 
 function cloud() {
   const g = new THREE.Group();
-  const mat = new THREE.MeshStandardMaterial({
-    color: 0xffffff, roughness: 1, metalness: 0,
-    transparent: true, opacity: 0.92, flatShading: true, fog: false,
+  const mat = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true, opacity: 0.92, fog: false,
   });
   const puffs = 4 + (Math.random() * 3 | 0);
   for (let i = 0; i < puffs; i++) {

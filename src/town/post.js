@@ -60,7 +60,7 @@ const GrainShader = {
     }`,
 };
 
-export function createComposer(renderer, scene, camera, { mobile = false } = {}) {
+export function createComposer(renderer, scene, camera, { lite = false } = {}) {
   const size = renderer.getSize(new THREE.Vector2());
   const W = size.x, H = size.y;
 
@@ -69,7 +69,7 @@ export function createComposer(renderer, scene, camera, { mobile = false } = {})
 
   // Ambient occlusion — the single biggest "pro" upgrade for low-poly.
   let gtao = null;
-  if (!mobile) {
+  if (!lite) {
     gtao = new GTAOPass(scene, camera, W, H);
     gtao.output = GTAOPass.OUTPUT.Default;
     gtao.blendIntensity = 0.55;
@@ -82,9 +82,9 @@ export function createComposer(renderer, scene, camera, { mobile = false } = {})
     composer.addPass(gtao);
   }
 
-  // Subtle bloom — sun glints on water, sky lift. Desktop only (mip-chain cost).
+  // Subtle bloom — sun glints on water, sky lift. Full tier only (mip-chain cost).
   let bloom = null;
-  if (!mobile) {
+  if (!lite) {
     bloom = new UnrealBloomPass(new THREE.Vector2(W, H), 0.22, 0.7, 0.86);
     composer.addPass(bloom);
   }
@@ -95,11 +95,11 @@ export function createComposer(renderer, scene, camera, { mobile = false } = {})
   composer.addPass(new ShaderPass(ColorGradeShader));
 
   // Tilt-shift: blur grows with vertical distance from a sharp focus band.
-  // Two full-screen passes — desktop only.
+  // Two full-screen passes — full tier only.
   const BLUR = 1.4;
   const focus = 0.62; // screen-height of the focus band (roughly the character)
   let hts = null, vts = null;
-  if (!mobile) {
+  if (!lite) {
     hts = new ShaderPass(HorizontalTiltShiftShader);
     hts.uniforms.r.value = focus; hts.uniforms.h.value = BLUR / W;
     composer.addPass(hts);
@@ -113,7 +113,7 @@ export function createComposer(renderer, scene, camera, { mobile = false } = {})
   vig.uniforms.darkness.value = 0.95;
   composer.addPass(vig);
 
-  if (!mobile) composer.addPass(new SMAAPass(W, H));
+  if (!lite) composer.addPass(new SMAAPass(W, H));
 
   const grain = new ShaderPass(GrainShader);
   composer.addPass(grain);

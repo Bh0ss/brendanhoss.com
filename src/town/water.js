@@ -8,7 +8,7 @@ import { GROUND, SKY } from './palette.js';
 // the waterline.
 
 export function createWater({ waterline = 56, sunDir }) {
-  const geo = new THREE.PlaneGeometry(900, 700, 200, 140);
+  const geo = new THREE.PlaneGeometry(900, 700, 80, 56);
   geo.rotateX(-Math.PI / 2);
 
   const mat = new THREE.ShaderMaterial({

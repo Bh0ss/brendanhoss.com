@@ -23,9 +23,34 @@ export class Town {
     this.time = 0;
 
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(devicePixelRatio, mobile ? 1.5 : 2));
+
+    // Quality tier. `mobile` already routes phones down a lighter pipeline; the
+    // same lighter pipeline is exactly what a weak integrated-GPU desktop needs.
+    // Detect low-end GPUs at startup and route them down that same path.
+    //
+    // Fail-safe: only downgrade on a POSITIVE low-end match. If the renderer
+    // string is empty/redacted (some Firefox configs), keep full quality — we'd
+    // rather a capable unknown GPU get full quality than penalize it.
+    //
+    // QA override: ?perf=low forces the lite tier on, ?perf=high forces it off,
+    // overriding detection. No param = auto-detection.
+    let lowEndGPU = false;
+    try {
+      const gl = this.renderer.getContext();
+      const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+      const rs = dbg ? String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL)) : '';
+      lowEndGPU = /intel(?!.*arc)|uhd|iris|hd graphics|mali|adreno|llvmpipe|swiftshader|microsoft basic/i.test(rs);
+    } catch (e) { lowEndGPU = false; }
+
+    let lite = mobile || lowEndGPU;
+    const perfParam = new URLSearchParams(location.search).get('perf');
+    if (perfParam === 'low') lite = true;
+    else if (perfParam === 'high') lite = false;
+    this.lite = lite;
+
+    this.renderer.setPixelRatio(Math.min(devicePixelRatio, lite ? 1.5 : 2));
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.06;
@@ -119,7 +144,7 @@ export class Town {
 
     // Post stack — degrade gracefully to direct rendering if it fails.
     try {
-      this.post = createComposer(this.renderer, this.scene, this.camera, { mobile });
+      this.post = createComposer(this.renderer, this.scene, this.camera, { lite: this.lite });
     } catch (err) {
       console.warn('Post-processing unavailable, rendering directly:', err);
       this.post = null;
@@ -134,7 +159,7 @@ export class Town {
     sun.position.copy(this.sunDir).multiplyScalar(80);
     sun.castShadow = true;
     sun.shadow.radius = 1.5;                 // tight penumbra (soft radius caused peter-panning)
-    sun.shadow.mapSize.set(this.mobile ? 1024 : 4096, this.mobile ? 1024 : 4096);
+    sun.shadow.mapSize.set(this.lite ? 1024 : 2048, this.lite ? 1024 : 2048);
     const s = 72;
     sun.shadow.camera.left = -s; sun.shadow.camera.right = s;
     sun.shadow.camera.top = s; sun.shadow.camera.bottom = -s;
