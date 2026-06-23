@@ -31,9 +31,10 @@ function makeGround() {
     const edge = Math.min(1, r / (LAND_RADIUS + 3));
     const c = colA.clone().lerp(colB, n * 0.7).multiplyScalar(1 - edge * 0.12);
     colors.push(c.r, c.g, c.b);
-    // small-planet illusion: curve the outer rim downward (play area stays flat)
-    const e = Math.max(0, (r - 60) / 22);
-    if (e > 0) pos.setY(i, -(e * e) * 16);
+    // small-planet illusion: curl ONLY the far rim, beyond every object (trees
+    // reach r~70, player clamps at 62), so nothing is left floating over a slope.
+    const e = Math.max(0, (r - 71) / 6);
+    if (e > 0) pos.setY(i, -(e * e) * 22);
   }
   pos.needsUpdate = true;
   geo.computeVertexNormals();

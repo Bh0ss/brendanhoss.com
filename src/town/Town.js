@@ -122,14 +122,14 @@ export class Town {
     const sun = new THREE.DirectionalLight(0xfff4e2, 1.25);
     sun.position.copy(this.sunDir).multiplyScalar(80);
     sun.castShadow = true;
-    sun.shadow.radius = 4;
-    sun.shadow.mapSize.set(this.mobile ? 1024 : 2048, this.mobile ? 1024 : 2048);
-    const s = 74;
+    sun.shadow.radius = 1.5;                 // tight penumbra (soft radius caused peter-panning)
+    sun.shadow.mapSize.set(this.mobile ? 1024 : 4096, this.mobile ? 1024 : 4096);
+    const s = 72;
     sun.shadow.camera.left = -s; sun.shadow.camera.right = s;
     sun.shadow.camera.top = s; sun.shadow.camera.bottom = -s;
     sun.shadow.camera.near = 1; sun.shadow.camera.far = 260;
-    sun.shadow.bias = -0.0003;
-    sun.shadow.normalBias = 0.015;
+    sun.shadow.bias = -0.0004;
+    sun.shadow.normalBias = 0.006;           // low → shadows stay attached at contact
     this.scene.add(sun);
     this.scene.add(new THREE.AmbientLight(0xffffff, 0.10));
   }
