@@ -16,10 +16,10 @@ import { VignetteShader } from 'three/addons/shaders/VignetteShader.js';
 const ColorGradeShader = {
   uniforms: {
     tDiffuse: { value: null },
-    contrast: { value: 1.07 },
-    saturation: { value: 1.14 },
-    lift: { value: 0.012 },
-    splitStrength: { value: 0.05 },
+    contrast: { value: 1.03 },
+    saturation: { value: 1.04 },
+    lift: { value: 0.020 },
+    splitStrength: { value: 0.04 },
   },
   vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
   fragmentShader: /* glsl */`
@@ -56,10 +56,10 @@ export function createComposer(renderer, scene, camera, { mobile = false } = {})
   if (!mobile) {
     gtao = new GTAOPass(scene, camera, W, H);
     gtao.output = GTAOPass.OUTPUT.Default;
-    gtao.blendIntensity = 0.85;
+    gtao.blendIntensity = 0.55;
     try {
       gtao.updateGtaoMaterial({
-        radius: 3.5, distanceExponent: 1.0, thickness: 1.2,
+        radius: 2.2, distanceExponent: 1.0, thickness: 1.2,
         scale: 1.0, samples: 16, distanceFallOff: 1.0, screenSpaceRadius: false,
       });
     } catch (_) { /* keep defaults */ }
@@ -69,7 +69,7 @@ export function createComposer(renderer, scene, camera, { mobile = false } = {})
   // Subtle bloom — sun glints on water, sky lift. Desktop only (mip-chain cost).
   let bloom = null;
   if (!mobile) {
-    bloom = new UnrealBloomPass(new THREE.Vector2(W, H), 0.32, 0.7, 0.82);
+    bloom = new UnrealBloomPass(new THREE.Vector2(W, H), 0.22, 0.7, 0.86);
     composer.addPass(bloom);
   }
 
@@ -80,7 +80,7 @@ export function createComposer(renderer, scene, camera, { mobile = false } = {})
 
   // Tilt-shift: blur grows with vertical distance from a sharp focus band.
   // Two full-screen passes — desktop only.
-  const BLUR = 2.0;
+  const BLUR = 1.4;
   const focus = 0.62; // screen-height of the focus band (roughly the character)
   let hts = null, vts = null;
   if (!mobile) {

@@ -1,45 +1,48 @@
-// Shared color language for the town — warm, slightly desaturated New England
-// shoreline, tuned toward the painterly Abeto feel. All values are hex ints so
-// they drop straight into THREE.Color.
+// Shared color language — desaturated, harmonized, value-banded toward the
+// delicate Abeto feel. Nothing fully saturated, no near-blacks. All hex ints.
 
 export const SKY = {
-  top: 0x6fc8da,      // brighter teal zenith
-  horizon: 0xfaf2e2,  // warm cream haze at the horizon
-  fog: 0xe7eee6,      // fog blends toward the horizon
+  top: 0x9ec9d6,      // softer dusty teal-blue zenith
+  horizon: 0xf3ece0,  // warm-grey cream haze
+  fog: 0xdfe6e4,      // cool, between sky and water
 };
 
 export const GROUND = {
-  grass: 0x93c06a,    // open grass
-  green: 0x82b65f,    // the town common (slightly deeper)
-  path: 0xdac9a4,     // sandy crushed-stone paths
-  sand: 0xe7d8b5,     // shoreline sand
-  water: 0x5cc6c2,    // Long Island Sound teal
-  waterDeep: 0x3da7a6,
+  grass: 0x9fbf86,    // desaturated sage-green
+  green: 0x93b478,    // the common, a touch deeper
+  path: 0xe0d4bc,     // light sandy stone
+  sand: 0xeaddc4,     // warm-grey beach
+  water: 0x7fc3c0,    // desaturated teal
+  waterDeep: 0x57a3a3,
 };
 
 export const BUILD = {
-  cream: 0xf4ead2,
-  white: 0xf9f3e6,
-  brick: 0xc77b5b,
-  sage: 0xb7c4a6,
-  blue: 0xb9cdd6,
-  roofTerracotta: 0xbf6049,
-  roofSlate: 0x6c7b8a,
-  roofDark: 0x47525e,
-  trim: 0x5a4636,
+  cream: 0xf1e7d2,
+  white: 0xf6efe1,        // off-white, never pure
+  brick: 0xc98b72,        // dusty terracotta
+  stone: 0xd9cdb6,        // warm limestone (collegiate/civic)
+  sage: 0xb4c2a8,
+  blue: 0xb6c9d3,
+  glassTech: 0xbcd7da,    // pale tinted glass (tech)
+  roofTerracotta: 0xc16b54,
+  roofSlate: 0x7c8a98,
+  roofDark: 0x55606c,
+  roofCopper: 0x86b3a3,   // verdigris (cupola/clock roofs)
+  trim: 0x6b5847,
+  outline: 0x2c2a2e,      // contour color (Increment 2)
 };
 
 export const NATURE = {
-  trunk: 0x7a5638,
-  foliageA: 0x6fae54,
-  foliageB: 0x5b9e46,
-  foliageC: 0x82bb63,
+  trunk: 0x8a6a4a,
+  foliageA: 0x82ab66,
+  foliageB: 0x73a059,
+  foliageC: 0x93b873,
 };
 
 export const CHAR = {
-  skin: 0xe8b98f,
-  shirt: 0x4a9eff,   // ties back to the site's signature blue
-  pants: 0x3a4a63,
-  shoes: 0x2c2c33,
-  hair: 0x4a3424,
+  skin: 0xe8bb93,
+  shirt: 0x5aa0e8,   // signature blue, slightly desaturated
+  pants: 0x415068,
+  shoes: 0x35353d,
+  hair: 0x5a4030,
 };

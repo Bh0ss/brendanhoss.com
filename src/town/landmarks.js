@@ -8,7 +8,7 @@ import { LANDMARKS } from '../data.js';
 // update() that animates the beacons.
 
 function mat(color, opts = {}) {
-  return new THREE.MeshStandardMaterial({ color, roughness: 0.9, metalness: 0, flatShading: true, ...opts });
+  return new THREE.MeshStandardMaterial({ color, roughness: 0.9, metalness: 0, flatShading: false, ...opts });
 }
 
 function gableRoof(w, d, h, color) {
@@ -116,6 +116,7 @@ export function buildLandmarks(scene, path) {
   const group = new THREE.Group(); scene.add(group);
   const interactables = [];
   const beacons = [];
+  const signs = [];
 
   for (const lm of LANDMARKS) {
     const node = new THREE.Group();
@@ -141,14 +142,14 @@ export function buildLandmarks(scene, path) {
       const plinth = new THREE.Mesh(new THREE.BoxGeometry(s.w + 1.3, 0.5, s.d + 1.3), mat(0xcfc3a6, { flatShading: false }));
       plinth.position.y = -0.12; plinth.receiveShadow = true; node.add(plinth);
       signY = s.h + (lm.kind === 'edu' ? 3.2 : lm.kind === 'hero' ? 3.0 : 2.8);
-      // sign in front (toward +z, which faces the approach after rotation)
-      const sign = makeSign(lm.sign, lm.accent, signY); sign.position.z = s.d / 2;
-      node.add(sign);
+      // sign in front, lifted clear of the roofline; billboards to camera
+      const sign = makeSign(lm.sign, lm.accent, signY); sign.position.z = s.d / 2 + 1.2;
+      node.add(sign); signs.push({ obj: sign, node });
       beaconY = s.h + 4.4;
     } else if (lm.kind === 'contact') {
       // harbor kiosk: a small signpost + bench-like base
       const post = new THREE.Mesh(new THREE.BoxGeometry(0.4, 4, 0.4), mat(0x6b5640)); post.position.y = 2; post.castShadow = true; node.add(post);
-      const sign = makeSign(lm.sign, lm.accent, 4.2); node.add(sign);
+      const sign = makeSign(lm.sign, lm.accent, 4.2); node.add(sign); signs.push({ obj: sign, node });
       footprint = 1.2; beaconY = 5.4;
     } else {
       // intro: just a beacon over the green near the gazebo
@@ -157,6 +158,15 @@ export function buildLandmarks(scene, path) {
 
     const beacon = beaconFor(lm.accent); beacon.position.y = beaconY; node.add(beacon);
     beacons.push(beacon);
+
+    // glowing ground marker ring — wayfinding + "this is a place"
+    const mr = Math.max(footprint, 1.6) + 2.2;
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(mr - 0.55, mr, 44),
+      new THREE.MeshBasicMaterial({ color: lm.accent, transparent: true, opacity: 0.4, side: THREE.DoubleSide, depthWrite: false, fog: true })
+    );
+    ring.rotation.x = -Math.PI / 2; ring.position.y = 0.05; ring.renderOrder = 1; node.add(ring);
+    beacon.userData.markerRing = ring;
 
     group.add(node);
 
@@ -169,12 +179,20 @@ export function buildLandmarks(scene, path) {
     });
   }
 
-  function update(dt, t) {
+  const _v = new THREE.Vector3();
+  function update(dt, t, camera) {
     for (const b of beacons) {
       b.userData.orb.position.y = Math.sin(t * 1.6 + b.position.x) * 0.18;
       b.userData.orb.rotation.y += dt * 0.8;
       b.userData.ring.scale.setScalar(1 + Math.sin(t * 2 + b.position.x) * 0.08);
       b.userData.ring.rotation.z += dt * 0.5;
+      if (b.userData.markerRing) b.userData.markerRing.material.opacity = 0.32 + 0.14 * (Math.sin(t * 2 + b.position.x) * 0.5 + 0.5);
+    }
+    // billboard signs (Y-axis only) so they always read broadside to camera
+    if (camera) for (const s of signs) {
+      s.node.getWorldPosition(_v);
+      const yaw = Math.atan2(camera.position.x - _v.x, camera.position.z - _v.z);
+      s.obj.rotation.y = yaw - s.node.rotation.y;
     }
   }
 

@@ -23,7 +23,7 @@ export class Player {
   }
 
   _mat(color, opts = {}) {
-    return new THREE.MeshStandardMaterial({ color, roughness: 0.82, metalness: 0, flatShading: true, ...opts });
+    return new THREE.MeshStandardMaterial({ color, roughness: 0.82, metalness: 0, flatShading: false, ...opts });
   }
 
   _limb(w, h, d, mat, taperTop = 1) {

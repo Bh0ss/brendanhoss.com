@@ -28,14 +28,14 @@ export class Town {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.16;
+    this.renderer.toneMappingExposure = 1.06;
 
     this.scene = new THREE.Scene();
 
     this.camera = new THREE.PerspectiveCamera(50, 1, 0.1, 1200);
     this.camYaw = Math.PI;
-    this.camPitch = 0.46;
-    this.camDist = mobile ? 27 : 23;
+    this.camPitch = 0.60;   // higher angle → looking down on a tiny world
+    this.camDist = mobile ? 27 : 24;
 
     this.sunDir = new THREE.Vector3(-40, 60, 30).normalize();
     this._lights();
@@ -111,15 +111,18 @@ export class Town {
       console.warn('Post-processing unavailable, rendering directly:', err);
       this.post = null;
     }
+
+    if (typeof window !== 'undefined') window.__town = this; // dev inspection
   }
 
   _lights() {
-    const hemi = new THREE.HemisphereLight(SKY.top, 0x6a7a55, 0.7);
+    const hemi = new THREE.HemisphereLight(SKY.top, 0x7d8a6a, 0.85);
     this.scene.add(hemi);
 
-    const sun = new THREE.DirectionalLight(0xfff2d6, 1.7);
+    const sun = new THREE.DirectionalLight(0xfff4e2, 1.25);
     sun.position.copy(this.sunDir).multiplyScalar(80);
     sun.castShadow = true;
+    sun.shadow.radius = 4;
     sun.shadow.mapSize.set(this.mobile ? 1024 : 2048, this.mobile ? 1024 : 2048);
     const s = 74;
     sun.shadow.camera.left = -s; sun.shadow.camera.right = s;
@@ -128,7 +131,7 @@ export class Town {
     sun.shadow.bias = -0.0003;
     sun.shadow.normalBias = 0.015;
     this.scene.add(sun);
-    this.scene.add(new THREE.AmbientLight(0xffffff, 0.16));
+    this.scene.add(new THREE.AmbientLight(0xffffff, 0.10));
   }
 
   _addBlobShadow() {
@@ -236,7 +239,7 @@ export class Town {
       this.nearest = near;
       this.ui.setPrompt(near ? near.data : null);
     }
-    this.landmarks.update(dt, this.time);
+    this.landmarks.update(dt, this.time, this.camera);
 
     // ground the character
     const pp = this.player.position;

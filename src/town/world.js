@@ -13,7 +13,7 @@ const LAND_RADIUS = 74;
 const SHORE_Z = 44;
 
 function mat(color, opts = {}) {
-  return new THREE.MeshStandardMaterial({ color, roughness: 0.92, metalness: 0, flatShading: true, ...opts });
+  return new THREE.MeshStandardMaterial({ color, roughness: 0.92, metalness: 0, flatShading: false, ...opts });
 }
 
 // ── Ground with gentle per-vertex color variation (kills the "flat demo" look)
@@ -26,11 +26,17 @@ function makeGround() {
   const colors = [];
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i), z = pos.getZ(i);
+    const r = Math.hypot(x, z);
     const n = (Math.sin(x * 0.08) * Math.cos(z * 0.07) + Math.sin((x + z) * 0.05)) * 0.5 + 0.5;
-    const edge = Math.min(1, Math.hypot(x, z) / (LAND_RADIUS + 3));
+    const edge = Math.min(1, r / (LAND_RADIUS + 3));
     const c = colA.clone().lerp(colB, n * 0.7).multiplyScalar(1 - edge * 0.12);
     colors.push(c.r, c.g, c.b);
+    // small-planet illusion: curve the outer rim downward (play area stays flat)
+    const e = Math.max(0, (r - 60) / 22);
+    if (e > 0) pos.setY(i, -(e * e) * 16);
   }
+  pos.needsUpdate = true;
+  geo.computeVertexNormals();
   geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
   const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0 }));
   m.receiveShadow = true;
@@ -176,7 +182,7 @@ function picketFence(len, segs = 8) {
 }
 
 function rock(s = 1) {
-  const m = new THREE.Mesh(new THREE.DodecahedronGeometry(s, 0), mat(0x8b8f93));
+  const m = new THREE.Mesh(new THREE.DodecahedronGeometry(s, 0), mat(0x8b8f93, { flatShading: true }));
   m.rotation.set(Math.random(), Math.random(), Math.random());
   m.scale.y = 0.7; m.castShadow = true; m.receiveShadow = true;
   return m;
@@ -223,9 +229,9 @@ function sailboat() {
 // A little Thimble-Island: rocky mound + a pine or two, sits in the Sound.
 function island(s = 1) {
   const g = new THREE.Group();
-  const base = new THREE.Mesh(new THREE.DodecahedronGeometry(3 * s, 0), mat(0x8b8f93));
+  const base = new THREE.Mesh(new THREE.DodecahedronGeometry(3 * s, 0), mat(0x8b8f93, { flatShading: true }));
   base.scale.y = 0.45; base.position.y = 0.3 * s; base.castShadow = true; g.add(base);
-  const grass = new THREE.Mesh(new THREE.DodecahedronGeometry(2.4 * s, 0), mat(0x7fae5c));
+  const grass = new THREE.Mesh(new THREE.DodecahedronGeometry(2.4 * s, 0), mat(0x7fae5c, { flatShading: true }));
   grass.scale.y = 0.5; grass.position.y = 1.0 * s; g.add(grass);
   const n = 1 + (Math.random() * 2 | 0);
   for (let i = 0; i < n; i++) {
@@ -264,7 +270,7 @@ export function buildWorld(scene) {
       void main(){ float t = clamp(normalize(vP).y*0.5+0.5,0.0,1.0); gl_FragColor = vec4(mix(bottom, top, smoothstep(0.0,0.65,t)),1.0); }`,
   });
   group.add(new THREE.Mesh(new THREE.SphereGeometry(420, 32, 16), skyMat));
-  scene.fog = new THREE.Fog(SKY.fog, 95, 340);
+  scene.fog = new THREE.Fog(SKY.fog, 70, 240);
 
   // ── Ground + green + shore ───────────────────────────────────────────────
   group.add(makeGround());
