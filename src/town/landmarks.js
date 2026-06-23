@@ -83,7 +83,7 @@ function buildingFor(lm) {
     w = 11; d = 8; h = 6;
     g.add(box(w, h, d, BUILD.stone));
     g.add(box(w + 0.3, 0.5, d + 0.3, BUILD.trim, 0.25));               // baseboard
-    g.add(gableRoof(w + 0.5, d + 0.5, 2.6, BUILD.roofSlate)).position.y = h;
+    const roofC = gableRoof(w + 0.5, d + 0.5, 2.6, BUILD.roofSlate); roofC.position.y = h; g.add(roofC);
     g.add(columns(4, 5.4, 3.6, d / 2 + 1.3));
     const ped = box(6.4, 0.5, 2.4, BUILD.white, 3.85); ped.position.z = d / 2 + 1.3; g.add(ped);
     const tri = gableRoof(6.4, 2.4, 1.2, BUILD.white); tri.position.set(0, 4.1, d / 2 + 1.3); g.add(tri);
@@ -115,7 +115,7 @@ function buildingFor(lm) {
     g.add(box(w, h, d, BUILD.stone));
     g.add(box(w + 0.4, 0.6, d + 0.4, BUILD.trim, 0.3));
     g.add(box(w + 0.6, 0.7, d + 0.6, BUILD.white, h - 0.2));           // cornice
-    g.add(new THREE.Mesh(new THREE.CylinderGeometry(2.6, 2.8, 1.2, 20), mat(BUILD.stone))).position.y = h + 0.6;
+    const drum = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 2.8, 1.2, 20), mat(BUILD.stone)); drum.position.y = h + 0.6; g.add(drum);
     const dome = new THREE.Mesh(new THREE.SphereGeometry(2.6, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), mat(BUILD.roofCopper)); dome.position.y = h + 1.2; dome.scale.y = 0.85; dome.castShadow = true; g.add(dome);
     const fin = new THREE.Mesh(new THREE.SphereGeometry(0.25, 10, 10), mat(0xddd6c8)); fin.position.y = h + 3.6; g.add(fin);
     g.add(columns(6, 8.4, 5.6, d / 2 + 1.6));
@@ -128,7 +128,7 @@ function buildingFor(lm) {
     g.add(box(w, h, d, BUILD.white));
     g.add(box(w + 0.4, 0.6, d + 0.4, BUILD.trim, 0.3));
     const upper = box(8, 4, 6, BUILD.white, h + 2); upper.position.z = -1.2; g.add(upper);
-    g.add(box(8.4, 0.5, 6.4, BUILD.roofDark, h + 4.25)).position.z = -1.2;
+    const capH = box(8.4, 0.5, 6.4, BUILD.roofDark, h + 4.25); capH.position.z = -1.2; g.add(capH);
     const fin = new THREE.Mesh(new THREE.BoxGeometry(0.7, h + 4, 0.7), accentMat); fin.position.set(w / 2 - 0.4, (h + 4) / 2, d / 2 - 0.4); fin.castShadow = true; g.add(fin);
     g.add(box(w + 0.2, 0.8, d + 0.2, lm.accent, h - 0.6));             // accent band
     g.add(windowGrid(w, h, d, 6, 3));
@@ -139,7 +139,7 @@ function buildingFor(lm) {
     w = 8; d = 6.5; h = 5;
     g.add(box(w, h, d, BUILD.sage));
     g.add(box(w + 0.3, 0.5, d + 0.3, BUILD.trim, 0.25));
-    g.add(gableRoof(w + 0.4, d + 0.4, 2.2, BUILD.roofTerracotta)).position.y = h;
+    const roofK = gableRoof(w + 0.4, d + 0.4, 2.2, BUILD.roofTerracotta); roofK.position.y = h; g.add(roofK);
     const awning = box(w * 0.92, 0.25, 1.1, lm.accent, 3.2); awning.position.z = d / 2 + 0.5; g.add(awning);
     g.add(windowGrid(w, h, d, 3, 1));
     const door = box(1.3, 2.1, 0.16, BUILD.trim, 1.05); door.position.z = d / 2 + 0.02; g.add(door);
@@ -162,13 +162,11 @@ function makeSign(text, accent, y) {
   ctx.font = '600 62px Fredoka, Trebuchet MS, sans-serif';
   ctx.fillText(text, 256, 74);
   const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
-  const board = new THREE.Mesh(new THREE.PlaneGeometry(4.4, 1.2), new THREE.MeshBasicMaterial({ map: tex, transparent: true, fog: true }));
+  const board = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 1.25), new THREE.MeshBasicMaterial({ map: tex, transparent: true, fog: true }));
   board.position.y = y; group.add(board);
-  // two little posts down to the roof
-  for (const sx of [-1.6, 1.6]) {
-    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 1.2, 6), mat(0x6b5640));
-    post.position.set(sx, y - 1.0, 0); group.add(post);
-  }
+  // a soft drop-shadow plate behind the board so it pops against the sky
+  const back = new THREE.Mesh(new THREE.PlaneGeometry(4.9, 1.5), new THREE.MeshBasicMaterial({ color: 0x2c2a2e, transparent: true, opacity: 0.22, fog: true }));
+  back.position.set(0, y, -0.04); group.add(back);
   return group;
 }
 
