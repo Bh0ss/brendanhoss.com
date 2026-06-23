@@ -34,42 +34,115 @@ function windowGrid(w, h, d, cols, rows) {
   return g;
 }
 
+// ── building part helpers ─────────────────────────────────────────────────
+function box(w, h, d, color, y) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(color));
+  m.position.y = (y !== undefined) ? y : h / 2;
+  m.castShadow = true; m.receiveShadow = true;
+  return m;
+}
+function columns(n, spanW, height, z) {
+  const g = new THREE.Group();
+  for (let i = 0; i < n; i++) {
+    const x = n > 1 ? -spanW / 2 + (i / (n - 1)) * spanW : 0;
+    const col = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.30, height, 12), mat(BUILD.white));
+    col.position.set(x, height / 2, z); col.castShadow = true; g.add(col);
+  }
+  return g;
+}
+function steps(w, z, n = 3) {
+  const g = new THREE.Group();
+  for (let i = 0; i < n; i++) {
+    const s = box(w - i * 0.7, 0.22, 0.7 + i * 0.5, BUILD.stone, 0.11 + i * 0.22);
+    s.position.z = z + (n - i) * 0.34; g.add(s);
+  }
+  return g;
+}
+function clockFace() {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 128;
+  const c = cv.getContext('2d');
+  c.fillStyle = '#f6efe1'; c.beginPath(); c.arc(64, 64, 58, 0, Math.PI * 2); c.fill();
+  c.strokeStyle = '#33413e'; c.lineWidth = 7; c.stroke();
+  c.lineWidth = 5; c.beginPath(); c.moveTo(64, 64); c.lineTo(64, 28); c.moveTo(64, 64); c.lineTo(90, 70); c.stroke();
+  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+  return new THREE.Mesh(new THREE.CircleGeometry(0.85, 24), new THREE.MeshBasicMaterial({ map: tex }));
+}
+
 function buildingFor(lm) {
   const g = new THREE.Group();
-  const accent = mat(lm.accent, { flatShading: false });
-  let w, d, h, wall, roof;
+  const accentMat = mat(lm.accent, { flatShading: false });
+  const id = lm.id;
+  const style = id === 'veoci_se' ? 'hero'
+    : (id === 'gateway' || id === 'uconn') ? 'collegiate'
+    : (id === 'lambda' || id === 'story') ? 'tech'
+    : (id === 'yale') ? 'civic'
+    : 'commercial';
+  let w, d, h;
 
-  if (lm.kind === 'hero') {
-    w = 12; d = 9; h = 9; wall = BUILD.white; roof = BUILD.roofSlate;
-    const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(wall));
-    body.position.y = h / 2; body.castShadow = true; body.receiveShadow = true; g.add(body);
-    // accent band + flat parapet roof (modern HQ)
-    const band = new THREE.Mesh(new THREE.BoxGeometry(w + 0.2, 1.0, d + 0.2), accent); band.position.y = h - 0.5; g.add(band);
-    const cap = new THREE.Mesh(new THREE.BoxGeometry(w + 0.6, 0.5, d + 0.6), mat(BUILD.roofDark)); cap.position.y = h + 0.2; g.add(cap);
+  if (style === 'collegiate') {
+    w = 11; d = 8; h = 6;
+    g.add(box(w, h, d, BUILD.stone));
+    g.add(box(w + 0.3, 0.5, d + 0.3, BUILD.trim, 0.25));               // baseboard
+    g.add(gableRoof(w + 0.5, d + 0.5, 2.6, BUILD.roofSlate)).position.y = h;
+    g.add(columns(4, 5.4, 3.6, d / 2 + 1.3));
+    const ped = box(6.4, 0.5, 2.4, BUILD.white, 3.85); ped.position.z = d / 2 + 1.3; g.add(ped);
+    const tri = gableRoof(6.4, 2.4, 1.2, BUILD.white); tri.position.set(0, 4.1, d / 2 + 1.3); g.add(tri);
+    g.add(steps(5.6, d / 2 + 1.3));
     g.add(windowGrid(w, h, d, 5, 2));
-    // entrance canopy
-    const canopy = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.3, 1.6), accent); canopy.position.set(0, 2.6, d / 2 + 0.8); g.add(canopy);
-    const door = new THREE.Mesh(new THREE.BoxGeometry(2.2, 2.3, 0.16), mat(0x2f3a44, { flatShading: false })); door.position.set(0, 1.15, d / 2 + 0.02); g.add(door);
-  } else if (lm.kind === 'edu') {
-    w = 9; d = 7; h = 6; wall = BUILD.brick; roof = BUILD.roofDark;
-    const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(wall)); body.position.y = h / 2; body.castShadow = true; body.receiveShadow = true; g.add(body);
-    g.add(gableRoof(w + 0.4, d + 0.4, 2.6, roof)).position.y = h;
-    // portico columns + pediment
-    for (let i = 0; i < 4; i++) {
-      const col = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 3.4, 10), mat(BUILD.white));
-      col.position.set(-2.4 + i * 1.6, 1.7, d / 2 + 1.0); col.castShadow = true; g.add(col);
+    const door = box(1.5, 2.4, 0.16, BUILD.trim, 1.2); door.position.z = d / 2 + 0.02; g.add(door);
+    if (id === 'gateway') {                                            // cupola
+      g.add(box(1.8, 1.8, 1.8, BUILD.white, h + 1.3));
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(1.5, 1.7, 8), mat(BUILD.roofCopper)); cone.position.y = h + 3.0; cone.rotation.y = Math.PI / 8; cone.castShadow = true; g.add(cone);
+      const fin = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 10), mat(0xddd6c8)); fin.position.y = h + 4.0; g.add(fin);
+    } else {                                                           // clock tower (UConn)
+      const tower = box(2.6, 5.5, 2.6, BUILD.stone, h + 1.4); tower.position.z = -1.0; g.add(tower);
+      const cap = new THREE.Mesh(new THREE.ConeGeometry(2.0, 1.8, 4), mat(BUILD.roofCopper)); cap.position.set(0, h + 5.0, -1.0); cap.rotation.y = Math.PI / 4; cap.castShadow = true; g.add(cap);
+      const clock = clockFace(); clock.position.set(0, h + 2.6, 0.31); g.add(clock);
     }
-    const ped = new THREE.Mesh(new THREE.BoxGeometry(7.4, 0.5, 2.2), mat(BUILD.white)); ped.position.set(0, 3.6, d / 2 + 1.0); g.add(ped);
-    const tri = gableRoof(7.4, 2.2, 1.1, BUILD.white); tri.position.set(0, 3.85, d / 2 + 1.0); g.add(tri);
-    g.add(windowGrid(w, h, d, 4, 1));
-    const door = new THREE.Mesh(new THREE.BoxGeometry(1.4, 2.2, 0.16), mat(BUILD.trim)); door.position.set(0, 1.1, d / 2 + 0.02); g.add(door);
-  } else { // work
-    w = 8; d = 6.5; h = 5; wall = lm.id === 'catalyst' ? BUILD.sage : BUILD.cream; roof = BUILD.roofTerracotta;
-    const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(wall)); body.position.y = h / 2; body.castShadow = true; body.receiveShadow = true; g.add(body);
-    g.add(gableRoof(w + 0.4, d + 0.4, 2.2, roof)).position.y = h;
-    const awning = new THREE.Mesh(new THREE.BoxGeometry(w * 0.92, 0.25, 1.1), accent); awning.position.set(0, 3.2, d / 2 + 0.5); g.add(awning);
+  } else if (style === 'tech') {
+    w = 10; d = 7; h = 5;
+    g.add(box(w, h, d, BUILD.white));
+    g.add(box(w + 0.3, 0.5, d + 0.3, BUILD.trim, 0.25));
+    g.add(box(w + 0.5, 0.5, d + 0.5, BUILD.roofDark, h + 0.2));        // flat roof cap
+    const band = new THREE.Mesh(new THREE.BoxGeometry(w * 0.86, h * 0.45, 0.12), mat(BUILD.glassTech, { emissive: 0x2a4650, emissiveIntensity: 0.25 }));
+    band.position.set(0, h * 0.56, d / 2 + 0.04); g.add(band);
+    for (let i = -1; i <= 1; i++) { const mu = box(0.12, h * 0.45, 0.16, BUILD.white, h * 0.56); mu.position.x = i * w * 0.28; mu.position.z = d / 2 + 0.06; g.add(mu); }
+    const pylon = new THREE.Mesh(new THREE.BoxGeometry(0.8, 3, 0.8), accentMat); pylon.position.set(-w / 2 - 1.1, 1.5, d / 2 - 1); pylon.castShadow = true; g.add(pylon);
+    const door = box(2.0, 2.3, 0.16, 0x2f3a44, 1.15); door.position.set(w * 0.18, 1.15, d / 2 + 0.02); g.add(door);
+    const mech = box(1.6, 0.8, 1.4, BUILD.roofDark, h + 0.8); mech.position.set(-2, h + 0.8, -1); g.add(mech);
+  } else if (style === 'civic') {
+    w = 12; d = 10; h = 8;
+    g.add(box(w, h, d, BUILD.stone));
+    g.add(box(w + 0.4, 0.6, d + 0.4, BUILD.trim, 0.3));
+    g.add(box(w + 0.6, 0.7, d + 0.6, BUILD.white, h - 0.2));           // cornice
+    g.add(new THREE.Mesh(new THREE.CylinderGeometry(2.6, 2.8, 1.2, 20), mat(BUILD.stone))).position.y = h + 0.6;
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(2.6, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), mat(BUILD.roofCopper)); dome.position.y = h + 1.2; dome.scale.y = 0.85; dome.castShadow = true; g.add(dome);
+    const fin = new THREE.Mesh(new THREE.SphereGeometry(0.25, 10, 10), mat(0xddd6c8)); fin.position.y = h + 3.6; g.add(fin);
+    g.add(columns(6, 8.4, 5.6, d / 2 + 1.6));
+    const ped = box(9.6, 0.6, 2.8, BUILD.white, 5.9); ped.position.z = d / 2 + 1.6; g.add(ped);
+    const tri = gableRoof(9.6, 2.8, 1.4, BUILD.white); tri.position.set(0, 6.2, d / 2 + 1.6); g.add(tri);
+    g.add(steps(8.6, d / 2 + 1.6, 4));
+    g.add(windowGrid(w, h, d, 4, 2));
+  } else if (style === 'hero') {
+    w = 12; d = 9; h = 11;
+    g.add(box(w, h, d, BUILD.white));
+    g.add(box(w + 0.4, 0.6, d + 0.4, BUILD.trim, 0.3));
+    const upper = box(8, 4, 6, BUILD.white, h + 2); upper.position.z = -1.2; g.add(upper);
+    g.add(box(8.4, 0.5, 6.4, BUILD.roofDark, h + 4.25)).position.z = -1.2;
+    const fin = new THREE.Mesh(new THREE.BoxGeometry(0.7, h + 4, 0.7), accentMat); fin.position.set(w / 2 - 0.4, (h + 4) / 2, d / 2 - 0.4); fin.castShadow = true; g.add(fin);
+    g.add(box(w + 0.2, 0.8, d + 0.2, lm.accent, h - 0.6));             // accent band
+    g.add(windowGrid(w, h, d, 6, 3));
+    const canopy = box(3.6, 0.35, 1.8, lm.accent, 2.8); canopy.position.z = d / 2 + 0.9; g.add(canopy);
+    const door = box(2.4, 2.5, 0.16, 0x2f3a44, 1.25); door.position.z = d / 2 + 0.02; g.add(door);
+    const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.4, 6), mat(0xddd6c8)); mast.position.set(0, h + 5.6, -1.2); g.add(mast);
+  } else { // commercial (Veoci · Ops)
+    w = 8; d = 6.5; h = 5;
+    g.add(box(w, h, d, BUILD.sage));
+    g.add(box(w + 0.3, 0.5, d + 0.3, BUILD.trim, 0.25));
+    g.add(gableRoof(w + 0.4, d + 0.4, 2.2, BUILD.roofTerracotta)).position.y = h;
+    const awning = box(w * 0.92, 0.25, 1.1, lm.accent, 3.2); awning.position.z = d / 2 + 0.5; g.add(awning);
     g.add(windowGrid(w, h, d, 3, 1));
-    const door = new THREE.Mesh(new THREE.BoxGeometry(1.3, 2.1, 0.16), mat(BUILD.trim)); door.position.set(0, 1.05, d / 2 + 0.02); g.add(door);
+    const door = box(1.3, 2.1, 0.16, BUILD.trim, 1.05); door.position.z = d / 2 + 0.02; g.add(door);
   }
 
   g.userData.size = { w, d, h };
