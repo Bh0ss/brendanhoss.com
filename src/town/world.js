@@ -18,8 +18,13 @@ function mat(color, opts = {}) {
 }
 
 // ── Ground with gentle per-vertex color variation (kills the "flat demo" look)
+// Flat ground, large enough that its edge sits deep in fog — so it reads as
+// solid land fading into a hazy horizon, never as a floating disc. (The earlier
+// curved-rim "small-planet" trick made the ground bend away under the buildings
+// while objects stayed flat — that's what looked broken.)
+const GROUND_VIS = 240;
 function makeGround() {
-  const geo = new THREE.CircleGeometry(LAND_RADIUS + 3, 96);
+  const geo = new THREE.CircleGeometry(GROUND_VIS, 120);
   geo.rotateX(-Math.PI / 2);
   const pos = geo.attributes.position;
   const colA = new THREE.Color(GROUND.grass);
@@ -27,18 +32,10 @@ function makeGround() {
   const colors = [];
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i), z = pos.getZ(i);
-    const r = Math.hypot(x, z);
     const n = (Math.sin(x * 0.08) * Math.cos(z * 0.07) + Math.sin((x + z) * 0.05)) * 0.5 + 0.5;
-    const edge = Math.min(1, r / (LAND_RADIUS + 3));
-    const c = colA.clone().lerp(colB, n * 0.7).multiplyScalar(1 - edge * 0.12);
+    const c = colA.clone().lerp(colB, n * 0.7);
     colors.push(c.r, c.g, c.b);
-    // small-planet illusion: curl ONLY the far rim, beyond every object (trees
-    // reach r~70, player clamps at 62), so nothing is left floating over a slope.
-    const e = Math.max(0, (r - 71) / 6);
-    if (e > 0) pos.setY(i, -(e * e) * 22);
   }
-  pos.needsUpdate = true;
-  geo.computeVertexNormals();
   geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
   const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0 }));
   m.receiveShadow = true;
@@ -272,7 +269,9 @@ export function buildWorld(scene) {
       void main(){ float t = clamp(normalize(vP).y*0.5+0.5,0.0,1.0); gl_FragColor = vec4(mix(bottom, top, smoothstep(0.0,0.65,t)),1.0); }`,
   });
   group.add(new THREE.Mesh(new THREE.SphereGeometry(420, 32, 16), skyMat));
-  scene.fog = new THREE.Fog(SKY.fog, 70, 240);
+  // Fog fades the ground into the sky's horizon color (seamless hazy horizon,
+  // no visible disc edge). Near keeps the buildings (r<=61) + trees (r<=70) clear.
+  scene.fog = new THREE.Fog(SKY.horizon, 85, 210);
 
   // ── Ground + green + shore ───────────────────────────────────────────────
   group.add(makeGround());
