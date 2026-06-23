@@ -22,6 +22,7 @@ import { LANDMARKS } from './data.js';
     if (lm.skills) h += `<p><strong>Toolkit:</strong> ${esc(lm.skills.join(', '))}</p>`;
     if (lm.email) h += `<p>Email: <a href="mailto:${esc(lm.email)}">${esc(lm.email)}</a></p>`;
     if (lm.linkedin) h += `<p><a href="${esc(lm.linkedin)}" rel="noopener noreferrer">LinkedIn</a></p>`;
+    if (lm.github) h += `<p><a href="${esc(lm.github)}" rel="noopener noreferrer">GitHub</a></p>`;
     h += '</section>';
   }
   h += `<p><a href="/resume.pdf" download="Brendan_Hoss_Resume_2026.pdf">Download résumé (PDF)</a></p>`;

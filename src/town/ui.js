@@ -46,6 +46,7 @@ function renderCard(lm) {
   if (lm.kind === 'hero' || lm.kind === 'contact') {
     const parts = [`<a class="btn btn-primary" href="/resume.pdf" download="Brendan_Hoss_Resume_2026.pdf">Download résumé</a>`];
     if (lm.linkedin) parts.push(`<a class="btn" href="${safeUrl(lm.linkedin)}" target="_blank" rel="noopener noreferrer">LinkedIn</a>`);
+    if (lm.github) parts.push(`<a class="btn" href="${safeUrl(lm.github)}" target="_blank" rel="noopener noreferrer">GitHub</a>`);
     if (lm.email) parts.push(`<a class="btn" href="mailto:${esc(lm.email)}">Email</a>`);
     actions = `<div class="card-actions">${parts.join('')}</div>`;
   }
