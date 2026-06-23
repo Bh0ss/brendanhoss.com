@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { CHAR } from './palette.js';
+import { outlineGroup } from './outline.js';
 
 // A characterful low-poly avatar with a tapered jacketed torso, two-segment
 // arms (elbow) and legs (knee) for a believable gait, and a friendly face.
@@ -102,6 +103,8 @@ export class Player {
       shoe.position.set(0, -0.86, 0.1); shoe.castShadow = true; shin.add(shoe);
       this.rig.add(thigh);
     }
+
+    outlineGroup(this.rig, 0.03);
   }
 
   get position() { return this.group.position; }

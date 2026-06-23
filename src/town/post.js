@@ -44,6 +44,22 @@ const ColorGradeShader = {
 // that sells the "tiny world", and a soft vignette + grade. Wrapped so a
 // failure degrades to plain rendering rather than a black screen.
 
+// Subtle animated film grain — makes flat low-poly read as "printed/painterly"
+// rather than CG. The cohesion glue Abeto has.
+const GrainShader = {
+  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, amount: { value: 0.03 } },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: /* glsl */`
+    uniform sampler2D tDiffuse; uniform float uTime, amount; varying vec2 vUv;
+    float rand(vec2 c){ return fract(sin(dot(c, vec2(12.9898,78.233))) * 43758.5453); }
+    void main(){
+      vec4 col = texture2D(tDiffuse, vUv);
+      float n = rand(vUv + fract(uTime)) * 2.0 - 1.0;
+      col.rgb += n * amount;
+      gl_FragColor = col;
+    }`,
+};
+
 export function createComposer(renderer, scene, camera, { mobile = false } = {}) {
   const size = renderer.getSize(new THREE.Vector2());
   const W = size.x, H = size.y;
@@ -99,6 +115,9 @@ export function createComposer(renderer, scene, camera, { mobile = false } = {})
 
   if (!mobile) composer.addPass(new SMAAPass(W, H));
 
+  const grain = new ShaderPass(GrainShader);
+  composer.addPass(grain);
+
   function resize(w, h) {
     composer.setSize(w, h);
     gtao?.setSize?.(w, h);
@@ -106,5 +125,5 @@ export function createComposer(renderer, scene, camera, { mobile = false } = {})
     if (vts) vts.uniforms.v.value = BLUR / h;
   }
 
-  return { composer, bloom, gtao, resize };
+  return { composer, bloom, gtao, grain, resize };
 }

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { BUILD } from './palette.js';
 import { LANDMARKS } from '../data.js';
+import { outlineGroup } from './outline.js';
 
 // Builds an interactive building + signboard + glowing beacon for each career
 // landmark. Returns the scene group, an `interactables` list (id, x, z,
@@ -137,6 +138,7 @@ export function buildLandmarks(scene, path) {
     let footprint = 3.2, signY = 6.5, beaconY = 5;
     if (lm.kind !== 'intro' && lm.kind !== 'contact') {
       const b = buildingFor(lm); node.add(b);
+      outlineGroup(b, 0.06);
       const s = b.userData.size; footprint = Math.max(s.w, s.d) / 2;
       // foundation plinth — grounds the building (kills the "floating" look)
       const plinth = new THREE.Mesh(new THREE.BoxGeometry(s.w + 1.3, 0.5, s.d + 1.3), mat(0xcfc3a6, { flatShading: false }));

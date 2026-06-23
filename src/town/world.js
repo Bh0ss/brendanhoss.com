@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { SKY, GROUND, BUILD, NATURE } from './palette.js';
 import { createPath } from './path.js';
 import { ROUTE, LANDMARKS } from '../data.js';
+import { outlineGroup } from './outline.js';
 
 // Builds the evocative-New-England shoreline town: a central green with a
 // gazebo + benches + flagpole, a white-steeple church, a main street of shops,
@@ -299,7 +300,7 @@ export function buildWorld(scene) {
   }
 
   // lighthouse on a point to the west of the beach
-  const lh = lighthouse(); lh.position.set(-44, 0, SHORE_Z + 6); group.add(lh);
+  const lh = lighthouse(); lh.position.set(-44, 0, SHORE_Z + 6); group.add(lh); outlineGroup(lh, 0.05);
   obstacles.push({ x: -44, z: SHORE_Z + 6, r: lh.userData.footprint });
   anchors.push({ id: 'lighthouse', label: 'Lighthouse', x: -40, z: SHORE_Z - 2 });
 
@@ -328,7 +329,7 @@ export function buildWorld(scene) {
   }
 
   // ── Gazebo + flagpole + benches on the green ─────────────────────────────
-  const gz = gazebo(); group.add(gz);
+  const gz = gazebo(); group.add(gz); outlineGroup(gz, 0.05);
   obstacles.push({ x: 0, z: 0, r: gz.userData.footprint });
 
   const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 8, 8), mat(0xddd6c8));
@@ -343,7 +344,7 @@ export function buildWorld(scene) {
   for (let i = 0; i < 5; i++) { const f = flowers(); f.position.set((Math.random() - 0.5) * 26, 0, (Math.random() - 0.5) * 26); group.add(f); }
 
   // ── Church (scenery), off the trail to the west ──────────────────────────
-  const ch = church(); ch.position.set(-58, 0, -4); ch.rotation.y = 1.1; group.add(ch);
+  const ch = church(); ch.position.set(-58, 0, -4); ch.rotation.y = 1.1; group.add(ch); outlineGroup(ch, 0.05);
   obstacles.push({ x: -58, z: -4, r: 6 });
 
   // ── Memory-lane path + lampposts along the trail ─────────────────────────

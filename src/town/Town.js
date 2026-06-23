@@ -269,7 +269,9 @@ export class Town {
     const dt = Math.min(0.05, (now - this._last) / 1000);
     this._last = now;
     this.update(dt);
-    if (this.post) this.post.composer.render(dt);
-    else this.renderer.render(this.scene, this.camera);
+    if (this.post) {
+      if (this.post.grain) this.post.grain.uniforms.uTime.value = this.time;
+      this.post.composer.render(dt);
+    } else this.renderer.render(this.scene, this.camera);
   }
 }
