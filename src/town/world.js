@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { SKY, GROUND, BUILD, NATURE } from './palette.js';
+import { createPath } from './path.js';
+import { ROUTE, LANDMARKS } from '../data.js';
 
 // Builds the evocative-New-England shoreline town: a central green with a
 // gazebo + benches + flagpole, a white-steeple church, a main street of shops,
@@ -333,45 +335,62 @@ export function buildWorld(scene) {
   }
   for (let i = 0; i < 5; i++) { const f = flowers(); f.position.set((Math.random() - 0.5) * 26, 0, (Math.random() - 0.5) * 26); group.add(f); }
 
-  // ── Church (scenery) tucked to the north-west ────────────────────────────
-  const ch = church(); ch.position.set(-32, 0, -40); ch.rotation.y = 0.4; group.add(ch);
-  obstacles.push({ x: -32, z: -36, r: 6 });
+  // ── Church (scenery), off the trail to the west ──────────────────────────
+  const ch = church(); ch.position.set(-58, 0, -4); ch.rotation.y = 1.1; group.add(ch);
+  obstacles.push({ x: -58, z: -4, r: 6 });
 
-  // ── Paths + lampposts ────────────────────────────────────────────────────
-  group.add(pathStrip(0, -10, -2, -28, 4.5));
-  group.add(pathStrip(6, 0, 31, 0, 4.5));
-  group.add(pathStrip(-6, 0, -31, 0, 4.5));
-  group.add(pathStrip(2, 13, 9, SHORE_Z, 4.5));
-  for (const [x, z] of [[8, -8], [-8, -8], [16, 2], [-16, 2], [6, 20], [-6, 20]]) {
-    const lp = lamppost(); lp.position.set(x, 0, z); group.add(lp);
-    obstacles.push({ x, z, r: lp.userData.footprint });
+  // ── Memory-lane path + lampposts along the trail ─────────────────────────
+  const path = createPath(ROUTE);
+  group.add(path.mesh);
+  const LAMP_N = 8;
+  for (let i = 1; i < LAMP_N; i++) {
+    const t = i / LAMP_N;
+    const p = path.besideAt(t, (i % 2 === 0 ? 1 : -1) * 4.3);
+    const lp = lamppost(); lp.position.set(p.x, 0, p.z); group.add(lp);
+    obstacles.push({ x: p.x, z: p.z, r: lp.userData.footprint });
   }
 
-  // ── Trees + bushes ───────────────────────────────────────────────────────
-  for (let i = 0; i < 10; i++) {
-    const a = (i / 10) * Math.PI * 2;
-    const t = roundTree(); const x = Math.cos(a) * 14, z = Math.sin(a) * 14;
-    t.position.set(x, 0, z); group.add(t); trees.push(t);
+  // ── Trees + bushes (organic; kept off the path, landmarks, and green) ────
+  function clearOf(x, z, treeClear) {
+    if (path.nearPath(x, z, treeClear)) return false;
+    for (const lm of LANDMARKS) if (Math.hypot(x - lm.pos[0], z - lm.pos[1]) < 9) return false;
+    if (Math.hypot(x, z) < 7) return false; // gazebo / green centre
+    return true;
+  }
+  // a loose ring framing the green
+  for (let i = 0; i < 9; i++) {
+    const a = (i / 9) * Math.PI * 2 + 0.3;
+    const r = 15 + Math.random() * 4;
+    const x = Math.cos(a) * r, z = Math.sin(a) * r;
+    if (!clearOf(x, z, 5)) continue;
+    const t = roundTree(); t.position.set(x, 0, z); group.add(t); trees.push(t);
     obstacles.push({ x, z, r: 0.9 });
   }
-  for (let i = 0; i < 30; i++) {
-    const a = Math.random() * Math.PI * 2;
-    const r = 22 + Math.random() * 46;
+  // scattered woods
+  let placed = 0, tries = 0;
+  while (placed < 48 && tries < 500) {
+    tries++;
+    const a = Math.random() * Math.PI * 2, r = 18 + Math.random() * 52;
     const x = Math.cos(a) * r, z = Math.sin(a) * r;
     if (z > SHORE_Z - 5) continue;
-    if (Math.abs(x) > 28 && Math.abs(x) < 42 && z > -24 && z < 24) continue; // landmark streets
-    if (Math.abs(x) < 13 && z < -22) continue;  // Veoci (hero) plaza
-    if (x < -36 && z > 28) continue;            // harbor
-    const t = Math.random() < 0.35 ? pine() : roundTree();
-    t.position.set(x, 0, z); t.scale.setScalar(0.8 + Math.random() * 0.5);
+    if (!clearOf(x, z, 4.5)) continue;
+    const t = Math.random() < 0.4 ? pine() : roundTree();
+    t.position.set(x, 0, z); t.scale.setScalar(0.8 + Math.random() * 0.6);
     group.add(t); trees.push(t);
     obstacles.push({ x, z, r: 0.8 });
+    placed++;
   }
-  for (let i = 0; i < 16; i++) {
-    const a = Math.random() * Math.PI * 2, r = 20 + Math.random() * 48;
+  // bushes + a few extra flower clumps
+  let bp = 0, bt = 0;
+  while (bp < 20 && bt < 240) {
+    bt++;
+    const a = Math.random() * Math.PI * 2, r = 14 + Math.random() * 54;
     const x = Math.cos(a) * r, z = Math.sin(a) * r;
     if (z > SHORE_Z - 5) continue;
-    const b = bush(); b.position.set(x, 0, z); group.add(b);
+    if (!clearOf(x, z, 3.2)) continue;
+    if (Math.random() < 0.25) { const f = flowers(4); f.position.set(x, 0, z); group.add(f); }
+    else { const b = bush(); b.position.set(x, 0, z); group.add(b); }
+    bp++;
   }
 
   function clampFn(pos) {
@@ -380,7 +399,7 @@ export function buildWorld(scene) {
     if (pos.z > SHORE_Z) pos.z = SHORE_Z;
   }
 
-  return { group, obstacles, anchors, clampFn, trees, boats, shoreZ: SHORE_Z };
+  return { group, obstacles, anchors, clampFn, trees, boats, shoreZ: SHORE_Z, path };
 }
 
 // ── kept near bottom for readability ──────────────────────────────────────

@@ -112,7 +112,7 @@ function beaconFor(accent) {
   return g;
 }
 
-export function buildLandmarks(scene) {
+export function buildLandmarks(scene, path) {
   const group = new THREE.Group(); scene.add(group);
   const interactables = [];
   const beacons = [];
@@ -120,12 +120,26 @@ export function buildLandmarks(scene) {
   for (const lm of LANDMARKS) {
     const node = new THREE.Group();
     node.position.set(lm.pos[0], 0, lm.pos[1]);
-    node.rotation.y = lm.face ?? 0;
+
+    // Auto-orient the entrance (+z) toward the nearest point on the trail.
+    let face = lm.face ?? 0;
+    if (path && lm.kind !== 'intro') {
+      let best = Infinity, bx = lm.pos[0], bz = lm.pos[1];
+      for (const s of path.samples) {
+        const d = Math.hypot(s.x - lm.pos[0], s.z - lm.pos[1]);
+        if (d < best) { best = d; bx = s.x; bz = s.z; }
+      }
+      face = Math.atan2(bx - lm.pos[0], bz - lm.pos[1]);
+    }
+    node.rotation.y = face;
 
     let footprint = 3.2, signY = 6.5, beaconY = 5;
     if (lm.kind !== 'intro' && lm.kind !== 'contact') {
       const b = buildingFor(lm); node.add(b);
       const s = b.userData.size; footprint = Math.max(s.w, s.d) / 2;
+      // foundation plinth — grounds the building (kills the "floating" look)
+      const plinth = new THREE.Mesh(new THREE.BoxGeometry(s.w + 1.3, 0.5, s.d + 1.3), mat(0xcfc3a6, { flatShading: false }));
+      plinth.position.y = -0.12; plinth.receiveShadow = true; node.add(plinth);
       signY = s.h + (lm.kind === 'edu' ? 3.2 : lm.kind === 'hero' ? 3.0 : 2.8);
       // sign in front (toward +z, which faces the approach after rotation)
       const sign = makeSign(lm.sign, lm.accent, signY); sign.position.z = s.d / 2;

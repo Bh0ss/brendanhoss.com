@@ -49,7 +49,7 @@ export class Town {
 
     // Career landmarks (buildings + signs + beacons); merge their footprints
     // into the collision set so the player can't walk through them.
-    this.landmarks = buildLandmarks(this.scene);
+    this.landmarks = buildLandmarks(this.scene, this.world.path);
     for (const it of this.landmarks.interactables) {
       if (it.collide > 0) this.world.obstacles.push({ x: it.x, z: it.z, r: it.collide });
     }
@@ -75,7 +75,13 @@ export class Town {
     });
 
     this.player = new Player();
-    this.player.position.set(0, 0, 20);
+    const sp = this.world.path.startPos();
+    this.player.position.set(sp.x, 0, sp.z);
+    const sd = this.world.path.startDir();
+    this.player.heading = Math.atan2(sd.x, sd.z);
+    this.player.group.rotation.y = this.player.heading;
+    // camera behind the player, looking down the trail at spawn
+    this.camYaw = this.player.heading;
     this.scene.add(this.player.group);
     this._addBlobShadow();
 
@@ -115,12 +121,12 @@ export class Town {
     sun.position.copy(this.sunDir).multiplyScalar(80);
     sun.castShadow = true;
     sun.shadow.mapSize.set(this.mobile ? 1024 : 2048, this.mobile ? 1024 : 2048);
-    const s = 95;
+    const s = 74;
     sun.shadow.camera.left = -s; sun.shadow.camera.right = s;
     sun.shadow.camera.top = s; sun.shadow.camera.bottom = -s;
     sun.shadow.camera.near = 1; sun.shadow.camera.far = 260;
-    sun.shadow.bias = -0.0004;
-    sun.shadow.normalBias = 0.02;
+    sun.shadow.bias = -0.0003;
+    sun.shadow.normalBias = 0.015;
     this.scene.add(sun);
     this.scene.add(new THREE.AmbientLight(0xffffff, 0.16));
   }
