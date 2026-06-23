@@ -259,6 +259,7 @@ export class Town {
     if (near !== this.nearest) {
       this.nearest = near;
       this.ui.setPrompt(near ? near.data : null);
+      if (near) this._navIndex = this.landmarks.interactables.indexOf(near);
     }
     this.landmarks.update(dt, this.time, this.camera);
 
