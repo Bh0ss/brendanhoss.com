@@ -1,6 +1,7 @@
 # brendanhoss.com — Walkable "Memory Lane" — Handoff
 
-_Last updated: 2026-06-23. Branch: `walkable-branford` (pushed to GitHub, **NOT live**)._
+_Last updated: 2026-06-23 (session 3). **LIVE at brendanhoss.com.** Working branch:
+`master` (== `walkable-branford`). Deploy = `npx wrangler deploy` (the reliable path)._
 
 ## What this is
 
@@ -78,14 +79,22 @@ to read a landmark · Esc/✕/backdrop to close.
   by removing the curl and using a large flat ground that fades into a fog horizon.
 
 ## Remaining roadmap
-- **DONE:** toon ramp on ground/green, grain/camera tuning, content enriched from the 2026 resume,
-  9-stop walk verified, `window.__town` dev hook removed.
-- **Optional future polish:** `InstancedMesh` for trees/rocks (perf), richer building detail,
-  distant scenery, toon ramp on building walls (deferred — risk of clashing with outlines).
-- **Pre-deploy:** real-device mobile FPS check; OG share-unfurl test (og:image needs the apex
-  domain bound). 
-- **Deploy (only on go-ahead):** merge `walkable-branford` → `master`, push → Cloudflare
-  auto-build → brendanhoss.com.
+- **LIVE on brendanhoss.com:** the walkable site incl. toon ramp, lo-fi music, mobile parity,
+  enriched resume content, and the new town `og.jpg`.
+- **On `master` (GitHub) but NOT yet deployed live:** Step 1 (click-to-move stops at walls,
+  player.js stuck-detection) + Step 2 (◀ ▶ prev/next building hop, `gotoLandmark` in Town.js,
+  `approach` point per interactable in landmarks.js). Both sentinel-QA'd SHIP. **To push them
+  live: `cd ~/Documents/brendanhoss.com && npx wrangler deploy`** (master is already pushed).
+
+- **NEXT — Step 3: beach visual touchup (not started).** Make the shoreline nicer/more realistic:
+  graded wet sand near the waterline, softer sand→water transition, better foam, dune/beach-grass
+  detail, maybe driftwood/shells. Files: `src/town/world.js` (the `sand` plane ~z=SHORE_Z+6, the
+  `water` via `src/town/water.js`, `SHORE_Z=44`, waterline = SHORE_Z+5). Then sentinel deep QA,
+  then deploy. After that, deploy everything together (steps 1–3) with `npx wrangler deploy`.
+
+- **Deferred LOW (sentinel, optional):** keyboard can't Tab to the ◀▶ arrows while a card is open
+  (pointer-only tour mid-card); `InstancedMesh` for trees/rocks (perf); real-device mobile FPS pass;
+  OG share-unfurl re-scrape verification (LinkedIn Post Inspector etc. — platforms cache hard).
 
 ## Session memory
 Archimedes session saved (Faraday): ID `f4e2361b-b3dc-4249-8982-eb539c75785f`. Two `learning`
