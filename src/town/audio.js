@@ -8,6 +8,7 @@
 export function createAudio() {
   let ctx = null, master = null, started = false, muted = false;
   let noiseBuf = null, music = null;
+  let musicSrc = null, musicGain = null;   // music routed through Web Audio (iOS honors GainNode.gain, not .volume)
 
   const MUSIC_URL = `${import.meta.env.BASE_URL || '/'}beach-lofi.mp3`;
   const MUSIC_VOL = 0.06;   // quiet background bed
@@ -28,21 +29,34 @@ export function createAudio() {
     }
     started = true;
 
-    // Looping music track.
+    // Looping music track. Level is set by musicGain (below) when Web Audio is
+    // available; iOS ignores HTMLMediaElement.volume so we leave it at default.
     music = new Audio(MUSIC_URL);
     music.loop = true;
     music.preload = 'auto';
-    music.volume = muted ? 0 : MUSIC_VOL;
-    music.play().catch(() => {});   // a later gesture (start() again) will retry
 
-    // Web Audio graph for SFX only.
+    // Web Audio graph.
     const AC = window.AudioContext || window.webkitAudioContext;
     if (AC) {
       ctx = new AC();
-      master = ctx.createGain(); master.gain.value = muted ? 0 : 0.5;
+      master = ctx.createGain(); master.gain.value = muted ? 0 : 0.5;   // SFX bus
       master.connect(ctx.destination);
       noiseBuf = makeNoise();
+
+      // Route music through a DEDICATED gain (independent of the SFX master).
+      // createMediaElementSource may be called only ONCE per element — guarded.
+      if (!musicSrc) {
+        musicSrc = ctx.createMediaElementSource(music);
+        musicGain = ctx.createGain();
+        musicGain.gain.value = muted ? 0 : MUSIC_VOL;   // quiet bed; honored on iOS
+        musicSrc.connect(musicGain).connect(ctx.destination);
+      }
+    } else {
+      // No Web Audio: mute via .muted (iOS-safe), level stays at element default.
+      music.muted = muted;
     }
+
+    music.play().catch(() => {});   // a later gesture (start() again) will retry
   }
 
   function footstep(i = 0) {
@@ -71,7 +85,11 @@ export function createAudio() {
 
   function setMuted(m) {
     muted = m;
-    if (music) music.volume = m ? 0 : MUSIC_VOL;
+    // Music: ramp the gain node (iOS honors gain, not .volume). Fall back to
+    // .muted only when Web Audio is unavailable (no ctx/musicGain).
+    if (musicGain && ctx) musicGain.gain.linearRampToValueAtTime(m ? 0 : MUSIC_VOL, ctx.currentTime + 0.2);
+    else if (music) music.muted = m;
+    // SFX bus unchanged.
     if (master && ctx) master.gain.linearRampToValueAtTime(m ? 0 : 0.5, ctx.currentTime + 0.2);
   }
 
