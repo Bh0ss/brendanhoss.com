@@ -19,6 +19,7 @@ export class Player {
     this.heading = 0;
     this.moveTarget = null;
     this.walkPhase = 0;
+    this._stuck = 0;
 
     this._build();
   }
@@ -125,6 +126,7 @@ export class Player {
     const moving = this.velocity.length() > 0.4;
 
     const pos = this.group.position;
+    const prevX = pos.x, prevZ = pos.z;
     let nx = pos.x + this.velocity.x * dt;
     let nz = pos.z + this.velocity.z * dt;
     for (const o of obstacles) {
@@ -135,6 +137,18 @@ export class Player {
     }
     pos.x = nx; pos.z = nz;
     if (clampFn) clampFn(pos);
+
+    // Click-to-move: if collision keeps us from making progress toward the
+    // target (we're wedged against a building/tree), give up so the character
+    // stops at the wall instead of grinding into it. Keyboard is unaffected.
+    if (this.moveTarget) {
+      const moved = Math.hypot(pos.x - prevX, pos.z - prevZ);
+      const intended = this.velocity.length() * dt;
+      if (moving && intended > 0.001 && moved < intended * 0.3) {
+        this._stuck += dt;
+        if (this._stuck > 0.22) { this.moveTarget = null; this._stuck = 0; }
+      } else { this._stuck = 0; }
+    }
 
     if (moving) {
       const want = Math.atan2(this.velocity.x, this.velocity.z);

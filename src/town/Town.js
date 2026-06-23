@@ -154,7 +154,7 @@ export class Town {
   _handleTap(nx, ny) {
     this.raycaster.setFromCamera({ x: nx, y: ny }, this.camera);
     const hit = new THREE.Vector3();
-    if (this.raycaster.ray.intersectPlane(this._groundPlane, hit)) this.player.moveTarget = hit;
+    if (this.raycaster.ray.intersectPlane(this._groundPlane, hit)) { this.player.moveTarget = hit; this.player._stuck = 0; }
   }
 
   start() {
