@@ -43,12 +43,20 @@ if (window.matchMedia('(hover: none), (pointer: coarse)').matches) {
 
 const canvas = document.getElementById('scene');
 let town;
-try {
-  town = new Town(canvas, { mobile, reducedMotion });
-} catch (err) {
-  console.error('WebGL init failed:', err);
-  document.body.classList.add('no-webgl');
-}
+// Wait for fonts before constructing the scene: Town draws Fredoka into canvas
+// sign textures (landmarks.js), which would otherwise render in the fallback
+// font on first load until the web font finishes loading.
+document.fonts.ready.then(() => {
+  try {
+    town = new Town(canvas, { mobile, reducedMotion });
+    // If reveal already ran (e.g. the hard fallback fired before fonts
+    // resolved), start the loop now — reveal's `if (town)` would have skipped it.
+    if (revealed) town.start();
+  } catch (err) {
+    console.error('WebGL init failed:', err);
+    document.body.classList.add('no-webgl');
+  }
+});
 
 // Preloader → reveal → start the loop.
 const preloader = document.getElementById('preloader');
