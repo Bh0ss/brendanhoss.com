@@ -246,6 +246,8 @@ export function buildLandmarks(scene, path) {
 
     // approach point: where the nav arrows drop the player to view this place
     let ax, az;
+    // NB: the intro approach point doubles as the player's spawn position
+    // (see Town.js constructor). Moving it relocates where the player lands.
     if (lm.kind === 'intro') { ax = 0; az = 6; }
     else {
       const dx = nearX - lm.pos[0], dz = nearZ - lm.pos[1], d = Math.hypot(dx, dz) || 1;

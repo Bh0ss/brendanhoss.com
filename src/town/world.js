@@ -287,13 +287,21 @@ export function buildWorld(scene) {
   const green = new THREE.Mesh(new THREE.CircleGeometry(17, 48), new THREE.MeshToonMaterial({ color: GROUND.green, gradientMap: _toonRamp }));
   green.rotation.x = -Math.PI / 2; green.position.y = 0.012; green.receiveShadow = true; group.add(green);
 
-  const sand = new THREE.Mesh(new THREE.PlaneGeometry(240, 30), mat(GROUND.sand, { flatShading: false, roughness: 1 }));
+  // Wide sand plane: spans the full visible x-range so the (slightly translucent)
+  // shallow water band always sits over sand, never the green ground — even at the
+  // far x-edges of the shoreline. Width is cheap (one flat quad).
+  const sand = new THREE.Mesh(new THREE.PlaneGeometry(500, 30), mat(GROUND.sand, { flatShading: false, roughness: 1 }));
   sand.rotation.x = -Math.PI / 2; sand.position.set(0, 0.006, SHORE_Z + 6); sand.receiveShadow = true; group.add(sand);
 
-  // dock
+  // dock — planks ride ~0.2 above the LOCAL water surface, which rises offshore
+  // (the no-dip wave fix lifts the mean sea level seaward). The seaward planks
+  // step up to stay above the water instead of being submerged.
   for (let i = 0; i < 6; i++) {
+    const pz = SHORE_Z + 4 + i * 2.2;
+    const waterMean = 0.05 + 0.5 * Math.max(0, Math.min(1, (pz - (SHORE_Z + 5)) / 9));
+    const py = Math.max(0.16, waterMean + 0.2);
     const plank = new THREE.Mesh(new THREE.BoxGeometry(3, 0.3, 2), mat(BUILD.trim));
-    plank.position.set(10, 0.16, SHORE_Z + 4 + i * 2.2); plank.castShadow = true; plank.receiveShadow = true; group.add(plank);
+    plank.position.set(10, py, pz); plank.castShadow = true; plank.receiveShadow = true; group.add(plank);
   }
   for (const z of [SHORE_Z + 5, SHORE_Z + 14]) for (const sx of [-1.3, 1.3]) {
     const post = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 1.6, 6), mat(0x5a4636));
@@ -316,7 +324,10 @@ export function buildWorld(scene) {
     const b = sailboat();
     b.position.set(-50 + i * 28 + Math.random() * 8, 0, SHORE_Z + 26 + Math.random() * 40);
     b.rotation.y = Math.random() * Math.PI;
-    b.userData = { phase: Math.random() * Math.PI * 2, baseY: 0 };
+    // baseY floats the hull on the offshore water surface. The no-dip wave fix
+    // raised the mean water level ~0.5, so lift the boats to match (otherwise
+    // crests wash over the decks and they look swamped).
+    b.userData = { phase: Math.random() * Math.PI * 2, baseY: 0.5 };
     group.add(b); boats.push(b);
   }
 

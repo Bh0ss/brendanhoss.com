@@ -82,7 +82,13 @@ export class Town {
     if (navNext) navNext.addEventListener('click', (e) => { e.stopPropagation(); this.audio.start(); this.gotoLandmark(1); });
 
     this.player = new Player();
-    const sp = this.world.path.startPos();
+    // Spawn between the trailhead and the gazebo — at the intro's approach point
+    // ([0,6]), which is inside the gazebo's interact radius (7.5), so the welcome
+    // prompt is right there: the player can click/press E on the gazebo to reopen
+    // the intro card whenever they like. Facing down the trail toward the first
+    // building so a single step forward starts the walk.
+    const intro = this.landmarks.interactables.find((i) => i.id === 'intro');
+    const sp = intro ? intro.approach : this.world.path.startPos();
     this.player.position.set(sp.x, 0, sp.z);
     const sd = this.world.path.startDir();
     this.player.heading = Math.atan2(sd.x, sd.z);
@@ -186,12 +192,15 @@ export class Town {
     this._last = performance.now();
     this._loop = this._loop.bind(this);
     requestAnimationFrame(this._loop);
-    // Welcome card on first visit only.
+    // Welcome card auto-opens once per session (sessionStorage): shown on a fresh
+    // landing, but not re-shown on every in-session refresh. Returning visitors in
+    // a new tab/session see it again. They can also reopen it anytime by clicking
+    // the gazebo (the intro prompt is in range at spawn).
     let seen = false;
-    try { seen = localStorage.getItem('bh_seen_intro') === '1'; } catch (_) { /* private mode */ }
+    try { seen = sessionStorage.getItem('bh_seen_intro') === '1'; } catch (_) { /* private mode */ }
     if (!seen) {
       setTimeout(() => this.ui.openCard(byId.intro), 650);
-      try { localStorage.setItem('bh_seen_intro', '1'); } catch (_) { /* ignore */ }
+      try { sessionStorage.setItem('bh_seen_intro', '1'); } catch (_) { /* ignore */ }
     }
   }
 
@@ -277,10 +286,10 @@ export class Town {
       c.rotation.z = Math.sin(t * 1.2 + ph) * 0.045;
       c.rotation.x = Math.cos(t * 0.9 + ph) * 0.03;
     }
-    // boat bob
+    // boat bob (around baseY, which floats the hull on the offshore water level)
     for (const b of this.world.boats) {
       const ph = b.userData.phase;
-      b.position.y = Math.sin(t * 1.3 + ph) * 0.18;
+      b.position.y = b.userData.baseY + Math.sin(t * 1.3 + ph) * 0.18;
       b.rotation.z = Math.sin(t * 0.8 + ph) * 0.05;
     }
   }
