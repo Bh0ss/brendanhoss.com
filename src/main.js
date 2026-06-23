@@ -32,10 +32,13 @@ import { LANDMARKS } from './data.js';
 const mobile = window.matchMedia('(max-width: 768px)').matches || window.innerWidth < 768;
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// Touch devices: the prompt opens on tap, not the E key.
+// Touch devices: prompt opens on tap (not E), and the WASD hint is irrelevant.
 if (window.matchMedia('(hover: none), (pointer: coarse)').matches) {
+  document.body.classList.add('touch');
   const pk = document.querySelector('#prompt .prompt-key');
   if (pk) pk.textContent = 'tap to read';
+  const wasdRow = document.querySelector('#controls-hint .ch-row');
+  if (wasdRow) wasdRow.style.display = 'none';
 }
 
 const canvas = document.getElementById('scene');
