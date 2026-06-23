@@ -400,8 +400,11 @@ export function buildWorld(scene) {
   }
 
   function clampFn(pos) {
+    // Keep the player on the flat play area, just past the farthest building
+    // (r~61) and before the curved rim (starts r=60) so they never float.
     const r = Math.hypot(pos.x, pos.z);
-    if (r > LAND_RADIUS) { pos.x *= LAND_RADIUS / r; pos.z *= LAND_RADIUS / r; }
+    const maxR = 62;
+    if (r > maxR) { pos.x *= maxR / r; pos.z *= maxR / r; }
     if (pos.z > SHORE_Z) pos.z = SHORE_Z;
   }
 
