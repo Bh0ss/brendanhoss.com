@@ -2,6 +2,8 @@
 // landmark is nearby (setPrompt) and asks it to open/close the card. Keeps all
 // HTML/string-building out of the 3D code.
 
+import { track } from '../analytics.js';
+
 function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 
 // Only allow safe schemes in hrefs (defends a future data.js edit from a
@@ -108,6 +110,9 @@ export function createUI(audio = null) {
 
   function openCard(lm) {
     if (!lm) return;
+    // Key engagement signal: which project/section a visitor actually opens.
+    // The intro card isn't a "section" — it's covered by experience_start.
+    if (lm.kind !== 'intro') track('landmark_view', { landmark: lm.id });
     open = true;
     lastFocused = document.activeElement;
     cardBody.innerHTML = renderCard(lm);
@@ -136,7 +141,22 @@ export function createUI(audio = null) {
 
   closeBtn.addEventListener('click', closeCard);
   backdrop.addEventListener('click', closeCard);
-  cardBody.addEventListener('click', (e) => { if (e.target.matches('[data-close]')) closeCard(); });
+  cardBody.addEventListener('click', (e) => {
+    // "Start exploring →" (intro card's [data-close]) — one-time-per-session
+    // engagement signal that the visitor began exploring.
+    if (e.target.matches('[data-close]')) {
+      let fired = false;
+      try { fired = sessionStorage.getItem('bh_exp_start') === '1'; } catch (_) { /* private mode */ }
+      if (!fired) {
+        track('experience_start');
+        try { sessionStorage.setItem('bh_exp_start', '1'); } catch (_) { /* ignore */ }
+      }
+      closeCard();
+    }
+    // Résumé PDF clicks are tracked site-wide by a single document-level
+    // delegate in main.js (covers card actions + the fallback résumé view),
+    // so there's no per-click resume_view here — avoids double-counting.
+  });
   addEventListener('keydown', (e) => { if (e.code === 'Escape' && open) closeCard(); });
   // tapping the prompt opens it (mobile / mouse)
   prompt.addEventListener('click', () => { if (currentPrompt) openCard(currentPrompt); });

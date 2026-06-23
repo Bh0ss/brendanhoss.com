@@ -1,6 +1,17 @@
 import './style.css';
 import { Town } from './town/Town.js';
 import { LANDMARKS } from './data.js';
+import { track } from './analytics.js';
+
+// Résumé PDF is high-value job-search signal. One site-wide delegate catches
+// every /resume.pdf link click — card actions and the fallback résumé view —
+// so we get a single resume_view per click regardless of where it lives.
+document.addEventListener('click', (e) => {
+  const a = e.target.closest && e.target.closest('a[href]');
+  if (a && /\/resume\.pdf(?:[?#]|$)/.test(a.getAttribute('href') || '')) {
+    track('resume_view');
+  }
+});
 
 // Render all content as real semantic HTML (always present, visually hidden by
 // default) so screen readers, search engines, ATS, and no-WebGL visitors get

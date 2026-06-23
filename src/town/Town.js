@@ -10,6 +10,7 @@ import { Input } from './input.js';
 import { createUI } from './ui.js';
 import { createAudio } from './audio.js';
 import { byId } from '../data.js';
+import { track } from '../analytics.js';
 
 // Third-person town. Owns renderer/scene/camera + the post stack, drives the
 // player from input, and runs a smoothed follow-cam you can orbit and zoom.
@@ -96,15 +97,17 @@ export class Town {
     if (muteBtn) muteBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       this.audio.start();
-      muteBtn.classList.toggle('muted', this.audio.toggle());
+      const muted = this.audio.toggle();
+      muteBtn.classList.toggle('muted', muted);
+      track('audio_toggle', { state: muted ? 'off' : 'on' });
     });
 
     // Prev/next building hop
     this._navIndex = 0;
     const navPrev = document.getElementById('nav-prev');
     const navNext = document.getElementById('nav-next');
-    if (navPrev) navPrev.addEventListener('click', (e) => { e.stopPropagation(); this.audio.start(); this.gotoLandmark(-1); });
-    if (navNext) navNext.addEventListener('click', (e) => { e.stopPropagation(); this.audio.start(); this.gotoLandmark(1); });
+    if (navPrev) navPrev.addEventListener('click', (e) => { e.stopPropagation(); this.audio.start(); track('nav_arrow', { direction: 'prev' }); this.gotoLandmark(-1); });
+    if (navNext) navNext.addEventListener('click', (e) => { e.stopPropagation(); this.audio.start(); track('nav_arrow', { direction: 'next' }); this.gotoLandmark(1); });
 
     this.player = new Player();
     // Spawn between the trailhead and the gazebo — at the intro's approach point
