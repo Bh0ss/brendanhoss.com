@@ -111,8 +111,6 @@ export class Town {
       console.warn('Post-processing unavailable, rendering directly:', err);
       this.post = null;
     }
-
-    if (typeof window !== 'undefined') window.__town = this; // dev inspection
   }
 
   _lights() {

@@ -17,6 +17,14 @@ function mat(color, opts = {}) {
   return new THREE.MeshStandardMaterial({ color, roughness: 0.92, metalness: 0, flatShading: false, ...opts });
 }
 
+// 3-band toon ramp for large matte surfaces (ground/green) — painterly banded
+// light falloff, the Abeto "illustrated" read.
+const _toonRamp = new THREE.DataTexture(
+  new Uint8Array([120, 120, 120, 255, 184, 184, 184, 255, 242, 242, 242, 255]), 3, 1, THREE.RGBAFormat,
+);
+_toonRamp.minFilter = _toonRamp.magFilter = THREE.NearestFilter;
+_toonRamp.needsUpdate = true;
+
 // ── Ground with gentle per-vertex color variation (kills the "flat demo" look)
 // Flat ground, large enough that its edge sits deep in fog — so it reads as
 // solid land fading into a hazy horizon, never as a floating disc. (The earlier
@@ -37,7 +45,7 @@ function makeGround() {
     colors.push(c.r, c.g, c.b);
   }
   geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-  const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0 }));
+  const m = new THREE.Mesh(geo, new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: _toonRamp }));
   m.receiveShadow = true;
   return m;
 }
@@ -276,7 +284,7 @@ export function buildWorld(scene) {
   // ── Ground + green + shore ───────────────────────────────────────────────
   group.add(makeGround());
 
-  const green = new THREE.Mesh(new THREE.CircleGeometry(17, 48), mat(GROUND.green, { flatShading: false, roughness: 1 }));
+  const green = new THREE.Mesh(new THREE.CircleGeometry(17, 48), new THREE.MeshToonMaterial({ color: GROUND.green, gradientMap: _toonRamp }));
   green.rotation.x = -Math.PI / 2; green.position.y = 0.012; green.receiveShadow = true; group.add(green);
 
   const sand = new THREE.Mesh(new THREE.PlaneGeometry(240, 30), mat(GROUND.sand, { flatShading: false, roughness: 1 }));

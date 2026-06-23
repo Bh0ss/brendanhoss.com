@@ -47,7 +47,7 @@ const ColorGradeShader = {
 // Subtle animated film grain — makes flat low-poly read as "printed/painterly"
 // rather than CG. The cohesion glue Abeto has.
 const GrainShader = {
-  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, amount: { value: 0.03 } },
+  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, amount: { value: 0.025 } },
   vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
   fragmentShader: /* glsl */`
     uniform sampler2D tDiffuse; uniform float uTime, amount; varying vec2 vUv;

@@ -77,13 +77,15 @@ to read a landmark · Esc/✕/backdrop to close.
 - **The world-bending look** came from curving the ground rim while objects stayed flat. Fixed
   by removing the curl and using a large flat ground that fades into a fog horizon.
 
-## Remaining roadmap (next loop)
-1. **Art polish / final tuning** (user's next priority): e.g. toon gradient ramp on ground/walls,
-   richer/instanced trees, distant detail, fine-tune palette/grain/camera, verify the full
-   9-stop walk reads well in order and no building sits awkwardly off the path.
-2. **Pre-deploy cleanup**: remove the `window.__town` dev hook in `Town.js`; run a final
-   sentinel + mobile FPS check on a real device; share-unfurl (OG) test.
-3. **Deploy**: merge `walkable-branford` → `master`, push → Cloudflare auto-build → brendanhoss.com.
+## Remaining roadmap
+- **DONE:** toon ramp on ground/green, grain/camera tuning, content enriched from the 2026 resume,
+  9-stop walk verified, `window.__town` dev hook removed.
+- **Optional future polish:** `InstancedMesh` for trees/rocks (perf), richer building detail,
+  distant scenery, toon ramp on building walls (deferred — risk of clashing with outlines).
+- **Pre-deploy:** real-device mobile FPS check; OG share-unfurl test (og:image needs the apex
+  domain bound). 
+- **Deploy (only on go-ahead):** merge `walkable-branford` → `master`, push → Cloudflare
+  auto-build → brendanhoss.com.
 
 ## Session memory
 Archimedes session saved (Faraday): ID `f4e2361b-b3dc-4249-8982-eb539c75785f`. Two `learning`
