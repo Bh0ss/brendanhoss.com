@@ -74,6 +74,13 @@ export class Town {
       muteBtn.classList.toggle('muted', this.audio.toggle());
     });
 
+    // Prev/next building hop
+    this._navIndex = 0;
+    const navPrev = document.getElementById('nav-prev');
+    const navNext = document.getElementById('nav-next');
+    if (navPrev) navPrev.addEventListener('click', (e) => { e.stopPropagation(); this.audio.start(); this.gotoLandmark(-1); });
+    if (navNext) navNext.addEventListener('click', (e) => { e.stopPropagation(); this.audio.start(); this.gotoLandmark(1); });
+
     this.player = new Player();
     const sp = this.world.path.startPos();
     this.player.position.set(sp.x, 0, sp.z);
@@ -155,6 +162,22 @@ export class Town {
     this.raycaster.setFromCamera({ x: nx, y: ny }, this.camera);
     const hit = new THREE.Vector3();
     if (this.raycaster.ray.intersectPlane(this._groundPlane, hit)) { this.player.moveTarget = hit; this.player._stuck = 0; }
+  }
+
+  // Hop the player to the prev/next landmark's approach point and open its card.
+  gotoLandmark(delta) {
+    const list = this.landmarks.interactables;
+    if (!list.length) return;
+    this._navIndex = ((this._navIndex + delta) % list.length + list.length) % list.length;
+    const it = list[this._navIndex];
+    const p = this.player;
+    p.position.set(it.approach.x, 0, it.approach.z);
+    p.moveTarget = null; p._stuck = 0; p.velocity.set(0, 0, 0);
+    const heading = Math.atan2(it.x - it.approach.x, it.z - it.approach.z);
+    p.heading = heading; p.group.rotation.y = heading;
+    this.camYaw = heading;
+    this._updateCamera(1, true);
+    this.ui.openCard(it.data);
   }
 
   start() {

@@ -196,13 +196,14 @@ export function buildLandmarks(scene, path) {
 
     // Auto-orient the entrance (+z) toward the nearest point on the trail.
     let face = lm.face ?? 0;
+    let nearX = lm.pos[0], nearZ = lm.pos[1];
     if (path && lm.kind !== 'intro') {
-      let best = Infinity, bx = lm.pos[0], bz = lm.pos[1];
+      let best = Infinity;
       for (const s of path.samples) {
         const d = Math.hypot(s.x - lm.pos[0], s.z - lm.pos[1]);
-        if (d < best) { best = d; bx = s.x; bz = s.z; }
+        if (d < best) { best = d; nearX = s.x; nearZ = s.z; }
       }
-      face = Math.atan2(bx - lm.pos[0], bz - lm.pos[1]);
+      face = Math.atan2(nearX - lm.pos[0], nearZ - lm.pos[1]);
     }
     node.rotation.y = face;
 
@@ -243,11 +244,20 @@ export function buildLandmarks(scene, path) {
 
     group.add(node);
 
+    // approach point: where the nav arrows drop the player to view this place
+    let ax, az;
+    if (lm.kind === 'intro') { ax = 0; az = 6; }
+    else {
+      const dx = nearX - lm.pos[0], dz = nearZ - lm.pos[1], d = Math.hypot(dx, dz) || 1;
+      ax = lm.pos[0] + (dx / d) * (footprint + 3);
+      az = lm.pos[1] + (dz / d) * (footprint + 3);
+    }
     interactables.push({
       id: lm.id, data: lm,
       x: lm.pos[0], z: lm.pos[1],
       collide: footprint > 0 ? footprint + 0.4 : 0,
       interact: Math.max(footprint, 2) + 5.5,
+      approach: { x: ax, z: az },
       beacon,
     });
   }
