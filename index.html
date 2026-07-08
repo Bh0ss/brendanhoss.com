@@ -38,11 +38,56 @@
     "knowsAbout": ["No-code platforms", "n8n automation", "Solution Architecture", "AI tooling", "REST APIs", "Python"]
   }
   </script>
+  <!-- Critical, inline loader styles. These must live in the document head (not
+       in the JS-bundled style.css) so the preloader paints on first parse —
+       before the ~680KB module bundle downloads and executes. Fredoka is
+       preloaded above, so declaring the @font-face here renders the wordmark
+       in-brand immediately. -->
+  <style>
+    @font-face {
+      font-family: 'Fredoka';
+      font-style: normal;
+      font-weight: 600 700;
+      font-display: swap;
+      src: url('/fonts/fredoka.woff2') format('woff2');
+    }
+    html, body { margin: 0; height: 100%; background: #8fd0d6; }
+    #preloader {
+      position: fixed; inset: 0; z-index: 50;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 26px;
+      background: #8fd0d6;
+      transition: opacity 0.55s ease;
+    }
+    #preloader.hidden { opacity: 0; pointer-events: none; }
+    #preloader .pl-mark {
+      font-family: 'Fredoka', system-ui, sans-serif;
+      font-weight: 700; font-size: 46px; letter-spacing: 1px;
+      color: #f9f3e6; text-shadow: 0 4px 0 rgba(0, 0, 0, 0.08);
+    }
+    #preloader .pl-dots { display: flex; gap: 10px; }
+    #preloader .pl-dots span {
+      width: 11px; height: 11px; border-radius: 50%;
+      background: #f9f3e6; opacity: 0.4;
+      animation: pl-pulse 1.1s ease-in-out infinite;
+    }
+    #preloader .pl-dots span:nth-child(2) { animation-delay: 0.18s; }
+    #preloader .pl-dots span:nth-child(3) { animation-delay: 0.36s; }
+    @keyframes pl-pulse {
+      0%, 100% { opacity: 0.35; transform: translateY(0); }
+      50%      { opacity: 1;    transform: translateY(-5px); }
+    }
+    @media (max-width: 768px) { #preloader .pl-mark { font-size: 34px; } }
+    @media (prefers-reduced-motion: reduce) {
+      #preloader .pl-dots span { animation: none; opacity: 0.85; }
+      #preloader { transition-duration: 0.001ms; }
+    }
+  </style>
 </head>
 <body>
-  <div id="preloader">
-    <div class="pl-mark">BH</div>
-    <div class="pl-bar"><span></span></div>
+  <div id="preloader" aria-hidden="true">
+    <div class="pl-mark">Brendan Hoss</div>
+    <div class="pl-dots"><span></span><span></span><span></span></div>
   </div>
 
   <canvas id="scene"></canvas>

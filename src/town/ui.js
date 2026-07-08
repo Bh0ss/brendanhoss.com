@@ -66,8 +66,8 @@ function animateCounters(root) {
     if (reduceMotion()) { el.textContent = target + suffix; continue; }
     const start = performance.now();
     const step = (now) => {
-      const p = Math.min((now - start) / 1100, 1);
-      const eased = 1 - Math.pow(1 - p, 3);
+      const p = Math.min((now - start) / 800, 1);
+      const eased = 1 - Math.pow(1 - p, 4); // ease-out quart: value lands fast
       el.textContent = Math.round(target * eased) + suffix;
       if (p < 1) requestAnimationFrame(step);
     };

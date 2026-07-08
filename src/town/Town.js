@@ -332,5 +332,11 @@ export class Town {
       if (this.post.grain) this.post.grain.uniforms.uTime.value = this.time;
       this.post.composer.render(dt);
     } else this.renderer.render(this.scene, this.camera);
+    // First rendered frame — let the loader fade out only once there's actually
+    // something on the canvas (fires once).
+    if (!this._firstFrameDone) {
+      this._firstFrameDone = true;
+      this.onFirstFrame?.();
+    }
   }
 }
