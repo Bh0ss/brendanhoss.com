@@ -1,8 +1,18 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="no-js">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Runs before first paint: drop no-js, and on /resume switch straight into
+       the reading view so recruiters get the page without waiting on the 3D
+       bundle. The path test normalises exactly like parsePath() in
+       src/routes.js (lowercase, strip every trailing slash) against RESUME_PATH. -->
+  <script>
+    (function (d) {
+      d.classList.remove('no-js');
+      if (location.pathname.toLowerCase().replace(/\/+$/, '') === '/resume') d.classList.add('resume-open');
+    })(document.documentElement);
+  </script>
   <title>Brendan Hoss — Solutions Engineer</title>
   <meta name="description" content="Brendan Hoss — Solutions Engineer. Walk through a little shoreline town and explore the work: no-code platform solutions, n8n automation, and AI-driven tooling." />
   <meta property="og:title" content="Brendan Hoss — Solutions Engineer" />
@@ -34,7 +44,8 @@
     "worksFor": { "@type": "Organization", "name": "Veoci" },
     "address": { "@type": "PostalAddress", "addressLocality": "Branford", "addressRegion": "CT", "addressCountry": "US" },
     "url": "https://brendanhoss.com",
-    "sameAs": ["https://linkedin.com/in/brendan-hoss"],
+    "email": "mailto:hossbrendan@gmail.com",
+    "sameAs": ["https://linkedin.com/in/brendan-hoss", "https://github.com/Bh0ss"],
     "knowsAbout": ["No-code platforms", "n8n automation", "Solution Architecture", "AI tooling", "REST APIs", "Python"]
   }
   </script>
@@ -98,6 +109,13 @@
     <span class="brand-sub">Brendan Hoss</span>
   </nav>
 
+  <!-- Fast path: always visible (even over the preloader). A real link, so it
+       works before/without the JS bundle; main.js upgrades it in place. -->
+  <a id="resume-btn" href="/resume" title="Read the résumé as a page">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+    <span>Résumé</span>
+  </a>
+
   <button id="mute" aria-label="Toggle sound" title="Sound on/off">
     <svg class="ic-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
     <svg class="ic-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="22" y1="9" x2="16" y2="15"/><line x1="16" y1="9" x2="22" y2="15"/></svg>
@@ -124,19 +142,18 @@
 
   <!-- Content card -->
   <div id="card-backdrop" class="hidden"></div>
-  <aside id="card" class="hidden" role="dialog" aria-modal="true">
+  <!-- Non-modal dialog: the ‹ › arrows outside it stay in the Tab cycle while
+       it's open (ui.js focus trap), so aria-modal would misdescribe it. -->
+  <aside id="card" class="hidden" role="dialog">
     <button id="card-close" aria-label="Close">×</button>
     <div id="card-body"></div>
   </aside>
 
-  <!-- Banner shown only when WebGL is unavailable -->
-  <div id="fallback-banner" aria-hidden="false">
-    This is an interactive 3D experience, but your browser can't run it — here's everything directly:
-  </div>
-
-  <!-- Full content as real semantic HTML: reachable by screen readers, search
-       engines, ATS, and as the no-WebGL fallback. Populated from data.js. -->
-  <main id="resume" class="sr-only" aria-label="Brendan Hoss — Solutions Engineer"></main>
+  <!-- Full résumé as real semantic HTML, pre-rendered from src/data.js at build
+       time (vite-plugin-resume.js). Visually hidden in the town; shown as the
+       "Read as a page" view (html.resume-open), and as the fallback when JS
+       (html.no-js) or WebGL (body.no-webgl) is unavailable. -->
+  <main id="resume" aria-labelledby="resume-title"><!--resume:prerender--></main>
 
   <script type="module" src="/src/main.js"></script>
 </body>

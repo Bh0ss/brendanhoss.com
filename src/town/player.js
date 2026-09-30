@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CHAR } from './palette.js';
+import { CHAR, part } from './palette.js';
 import { outlineGroup } from './outline.js';
 
 // A characterful low-poly avatar with a tapered jacketed torso, two-segment
@@ -24,9 +24,9 @@ export class Player {
     this._build();
   }
 
-  _mat(color, opts = {}) {
-    return new THREE.MeshStandardMaterial({ color, roughness: 0.82, metalness: 0, flatShading: false, ...opts });
-  }
+  // Colours, not materials: every body part is painted onto the shared toon
+  // material (palette.js), so the avatar is lit exactly like the town.
+  _part(geo, color) { return part(geo, color, { ao: 0.08, receive: false }); }
 
   _limb(w, h, d, mat, taperTop = 1) {
     // a short box limb segment whose pivot is at its TOP (y=0), extending down
@@ -38,44 +38,38 @@ export class Player {
       }
     }
     geo.translate(0, -h / 2, 0);
-    const m = new THREE.Mesh(geo, mat);
-    m.castShadow = true;
-    return m;
+    return this._part(geo, mat);
   }
 
   _build() {
-    const skin = this._mat(CHAR.skin, { roughness: 0.7 });
-    const jacket = this._mat(CHAR.shirt);
-    const jacketDk = this._mat(0x3f86e0);
-    const pants = this._mat(CHAR.pants);
-    const shoes = this._mat(CHAR.shoes, { roughness: 0.6 });
-    const hair = this._mat(CHAR.hair);
+    const skin = CHAR.skin, jacket = CHAR.shirt, jacketDk = CHAR.shirtDark;
+    const pants = CHAR.pants, shoes = CHAR.shoes, hair = CHAR.hair;
 
     // ── Torso: tapered waist + broader chest, with a jacket collar ──────────
     const pelvis = this._limb(0.95, 0.55, 0.62, pants, 1.15); pelvis.position.y = 1.95; this.rig.add(pelvis);
-    const waist = new THREE.Mesh(new THREE.BoxGeometry(0.92, 0.5, 0.6), jacket);
+    const waist = this._part(new THREE.BoxGeometry(0.92, 0.5, 0.6), jacket);
     waist.position.y = 1.7; waist.castShadow = true; this.rig.add(waist);
-    const chest = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.8, 0.66), jacket);
+    const chest = this._part(new THREE.BoxGeometry(1.18, 0.8, 0.66), jacket);
     chest.position.y = 2.25; chest.castShadow = true; this.rig.add(chest);
     // jacket zipper + collar
-    const zip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.1, 0.04), jacketDk);
+    const zip = this._part(new THREE.BoxGeometry(0.08, 1.1, 0.04), jacketDk);
     zip.position.set(0, 2.0, 0.34); this.rig.add(zip);
-    const collar = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.18, 0.6), jacketDk);
+    const collar = this._part(new THREE.BoxGeometry(0.78, 0.18, 0.6), jacketDk);
     collar.position.y = 2.66; this.rig.add(collar);
 
     // ── Head, hair, face ─────────────────────────────────────────────────────
-    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.24, 0.26, 8), skin);
+    const neck = this._part(new THREE.CylinderGeometry(0.2, 0.24, 0.26, 8), skin);
     neck.position.y = 2.78; this.rig.add(neck);
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.45, 20, 16), skin);
+    const head = this._part(new THREE.SphereGeometry(0.45, 20, 16), skin);
     head.position.y = 3.16; head.scale.set(1, 1.05, 0.95); head.castShadow = true; this.rig.add(head);
     // hair: a slim skullcap that shows the forehead/face
-    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.465, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.46), hair);
+    const cap = this._part(new THREE.SphereGeometry(0.465, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.46), hair);
     cap.position.y = 3.27; cap.scale.set(1, 1.0, 0.96); this.rig.add(cap);
-    const fringe = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.1, 0.08), hair);
+    const fringe = this._part(new THREE.BoxGeometry(0.52, 0.1, 0.08), hair);
     fringe.position.set(0, 3.33, 0.4); this.rig.add(fringe);
-    const eyeMat = new THREE.MeshStandardMaterial({ color: 0x2a2a30, roughness: 0.4 });
+    const eyeMat = CHAR.eye;
     for (const sx of [-1, 1]) {
-      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.062, 12, 10), eyeMat);
+      const eye = this._part(new THREE.SphereGeometry(0.062, 12, 10), eyeMat);
       eye.position.set(sx * 0.15, 3.14, 0.41); this.rig.add(eye);
     }
 
@@ -87,7 +81,7 @@ export class Player {
       arm.add(this._limb(0.3, 0.62, 0.3, jacket));        // upper arm (sleeve)
       fore.position.y = -0.62; arm.add(fore);
       fore.add(this._limb(0.27, 0.5, 0.27, jacketDk));     // forearm (cuff)
-      const hand = new THREE.Mesh(new THREE.SphereGeometry(0.17, 12, 10), skin);
+      const hand = this._part(new THREE.SphereGeometry(0.17, 12, 10), skin);
       hand.position.y = -0.56; hand.castShadow = true; fore.add(hand);
       this.rig.add(arm);
     }
@@ -100,12 +94,12 @@ export class Player {
       thigh.add(this._limb(0.38, 0.78, 0.42, pants));
       shin.position.y = -0.78; thigh.add(shin);
       shin.add(this._limb(0.34, 0.78, 0.38, pants));
-      const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.26, 0.62), shoes);
+      const shoe = this._part(new THREE.BoxGeometry(0.42, 0.26, 0.62), shoes);
       shoe.position.set(0, -0.86, 0.1); shoe.castShadow = true; shin.add(shoe);
       this.rig.add(thigh);
     }
 
-    outlineGroup(this.rig, 0.03);
+    outlineGroup(this.rig, 1.5);
   }
 
   get position() { return this.group.position; }

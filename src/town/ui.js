@@ -3,6 +3,7 @@
 // HTML/string-building out of the 3D code.
 
 import { track } from '../analytics.js';
+import { isResumeOpen } from '../resume-view.js';
 
 function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 
@@ -53,7 +54,8 @@ function renderCard(lm) {
     actions = `<div class="card-actions">${parts.join('')}</div>`;
   }
   if (lm.kind === 'intro') {
-    actions = `<div class="card-actions"><button class="btn btn-primary" data-close>Start exploring →</button></div>`;
+    // Two doors: walk the town, or the fast path (résumé page view).
+    actions = `<div class="card-actions"><button class="btn btn-primary" data-close>Explore the town →</button><button class="btn" data-resume>Just the highlights</button></div>`;
   }
 
   return `${head}${intro}${body}${actions}`;
@@ -83,20 +85,27 @@ export function createUI(audio = null) {
   const backdrop = document.getElementById('card-backdrop');
   const closeBtn = document.getElementById('card-close');
 
+  // The ‹ › building-hop arrows sit outside the card (fixed, above the
+  // backdrop) but stay usable while it's open, so they join the Tab cycle.
+  const navBtns = ['nav-prev', 'nav-next'].map((id) => document.getElementById(id)).filter(Boolean);
+
   let currentPrompt = null;
   let open = false;
   let lastFocused = null;
+  let hideTimer = 0;
 
-  // Trap Tab within the card while it's open.
+  // Trap Tab within the card + the nav arrows while it's open. Document-level so
+  // it also catches Tab while focus is on an arrow (outside the card).
   function onTrap(e) {
     if (!open || e.code !== 'Tab') return;
-    const f = card.querySelectorAll('a[href], button, [tabindex]:not([tabindex="-1"])');
+    const f = [...card.querySelectorAll('a[href], button, [tabindex]:not([tabindex="-1"])'), ...navBtns];
     if (!f.length) return;
-    const first = f[0], last = f[f.length - 1];
-    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    const i = f.indexOf(document.activeElement);
+    e.preventDefault();
+    const next = i < 0 ? (e.shiftKey ? f.length - 1 : 0) : (i + (e.shiftKey ? -1 : 1) + f.length) % f.length;
+    f[next].focus();
   }
-  card.addEventListener('keydown', onTrap);
+  addEventListener('keydown', onTrap);
 
   function setPrompt(lm) {
     currentPrompt = lm;
@@ -110,11 +119,21 @@ export function createUI(audio = null) {
 
   function openCard(lm) {
     if (!lm) return;
+    // No cards over the résumé page view (E-key / prompt taps behind it).
+    if (isResumeOpen()) return;
+    // The auto-opening welcome card never replaces a card that's already up
+    // (e.g. a /yale deep link opened before the intro's 650ms timer fired).
+    if (lm.kind === 'intro' && open) return;
     // Key engagement signal: which project/section a visitor actually opens.
     // The intro card isn't a "section" — it's covered by experience_start.
     if (lm.kind !== 'intro') track('landmark_view', { landmark: lm.id });
+    // Hopping card→card with an arrow keeps focus on that arrow, and keeps the
+    // original pre-card focus target for when the card finally closes.
+    const keepFocus = open && navBtns.includes(document.activeElement);
+    if (!open) lastFocused = document.activeElement;
     open = true;
-    lastFocused = document.activeElement;
+    api.current = lm;
+    clearTimeout(hideTimer);
     cardBody.innerHTML = renderCard(lm);
     card.setAttribute('aria-labelledby', 'card-title-h');
     card.classList.remove('hidden');
@@ -124,19 +143,24 @@ export function createUI(audio = null) {
     requestAnimationFrame(() => {
       card.classList.add('shown');
       animateCounters(cardBody);
-      closeBtn.focus();
+      if (!keepFocus) closeBtn.focus();
     });
+    api.onChange?.(lm);
+    api.onVisibility?.(true);
   }
 
   function closeCard() {
     if (!open) return;
     open = false;
+    api.current = null;
     card.classList.remove('shown');
     backdrop.classList.add('hidden');
-    setTimeout(() => card.classList.add('hidden'), 260);
+    hideTimer = setTimeout(() => card.classList.add('hidden'), 260);
     audio?.ui('close');
     setPrompt(currentPrompt);
     if (lastFocused && lastFocused.focus) lastFocused.focus();
+    api.onChange?.(null);
+    api.onVisibility?.(false);
   }
 
   closeBtn.addEventListener('click', closeCard);
@@ -153,6 +177,12 @@ export function createUI(audio = null) {
       }
       closeCard();
     }
+    // "Just the highlights" → the résumé page view. main.js owns that view and
+    // the URL, so hand off via a DOM event instead of importing it here.
+    if (e.target.matches('[data-resume]')) {
+      closeCard();
+      document.dispatchEvent(new CustomEvent('bh:resume-request', { detail: { source: 'intro' } }));
+    }
     // Résumé PDF clicks are tracked site-wide by a single document-level
     // delegate in main.js (covers card actions + the fallback résumé view),
     // so there's no per-click resume_view here — avoids double-counting.
@@ -161,5 +191,12 @@ export function createUI(audio = null) {
   // tapping the prompt opens it (mobile / mouse)
   prompt.addEventListener('click', () => { if (currentPrompt) openCard(currentPrompt); });
 
-  return { setPrompt, openCard, closeCard, isOpen: () => open };
+  // isOpen() is what Town reads to freeze movement and gate the E key, so the
+  // résumé page view counts as "open" too: nothing walks or opens behind it.
+  // current is the open card's landmark (or null). onChange(lm | null) is set by
+  // main.js to keep the URL in sync with the card. onVisibility(bool) is Town's
+  // own hook (card shown/hidden → pause/resume rendering); kept separate so the
+  // two owners never overwrite each other.
+  const api = { setPrompt, openCard, closeCard, isOpen: () => open || isResumeOpen(), current: null, onChange: null, onVisibility: null };
+  return api;
 }

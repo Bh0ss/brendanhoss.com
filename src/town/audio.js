@@ -7,6 +7,7 @@
 
 export function createAudio() {
   let ctx = null, master = null, started = false, muted = false;
+  let ducked = false, duckTimer = 0;   // music paused while the résumé view covers the town
   let noiseBuf = null, music = null;
   let musicSrc = null, musicGain = null;   // music routed through Web Audio (iOS honors GainNode.gain, not .volume)
 
@@ -24,7 +25,7 @@ export function createAudio() {
   function start() {
     if (started) {
       if (ctx && ctx.state === 'suspended') ctx.resume();
-      if (music && music.paused && !muted) music.play().catch(() => {});
+      if (music && music.paused && !muted && !ducked) music.play().catch(() => {});
       return;
     }
     started = true;
@@ -56,7 +57,33 @@ export function createAudio() {
       music.muted = muted;
     }
 
-    music.play().catch(() => {});   // a later gesture (start() again) will retry
+    if (!ducked) music.play().catch(() => {});   // a later gesture (start() again) will retry
+  }
+
+  // Duck: fade the music bed out and pause it (e.g. while the résumé reading
+  // view is open); unduck fades it back in. Independent of mute: a muted
+  // player stays silent on unduck (gain 0 / .muted). SFX are untouched —
+  // nothing plays behind the view anyway (movement and cards are frozen).
+  function setDucked(d) {
+    if (d === ducked) return;
+    ducked = d;
+    clearTimeout(duckTimer);
+    if (!music) return;   // not started yet: start() honors the flag
+    if (d) {
+      if (musicGain && ctx) {
+        musicGain.gain.cancelScheduledValues(ctx.currentTime);
+        musicGain.gain.setValueAtTime(musicGain.gain.value, ctx.currentTime);
+        musicGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3);
+        duckTimer = setTimeout(() => { if (ducked) music.pause(); }, 320);
+      } else music.pause();
+    } else {
+      if (musicGain && ctx) {
+        musicGain.gain.cancelScheduledValues(ctx.currentTime);
+        musicGain.gain.setValueAtTime(0, ctx.currentTime);
+        musicGain.gain.linearRampToValueAtTime(muted ? 0 : MUSIC_VOL, ctx.currentTime + 0.6);
+      }
+      music.play().catch(() => {});   // mute is carried by the gain / .muted, as in start()
+    }
   }
 
   function footstep(i = 0) {
@@ -87,14 +114,14 @@ export function createAudio() {
     muted = m;
     // Music: ramp the gain node (iOS honors gain, not .volume). Fall back to
     // .muted only when Web Audio is unavailable (no ctx/musicGain).
-    if (musicGain && ctx) musicGain.gain.linearRampToValueAtTime(m ? 0 : MUSIC_VOL, ctx.currentTime + 0.2);
+    if (musicGain && ctx) musicGain.gain.linearRampToValueAtTime(m || ducked ? 0 : MUSIC_VOL, ctx.currentTime + 0.2);
     else if (music) music.muted = m;
     // SFX bus unchanged.
     if (master && ctx) master.gain.linearRampToValueAtTime(m ? 0 : 0.5, ctx.currentTime + 0.2);
   }
 
   return {
-    start, footstep, ui: blip,
+    start, footstep, ui: blip, setDucked,
     toggle() { setMuted(!muted); return muted; },
     get muted() { return muted; },
   };

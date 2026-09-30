@@ -116,40 +116,128 @@ kbd {
   letter-spacing: 0.5px;
 }
 
-/* ── Accessible content / no-WebGL fallback ────────────────────────────── */
-.sr-only {
+/* ── Résumé: accessible content, "Read as a page" view, no-JS/no-WebGL ── */
+/* <main id="resume"> is pre-rendered at build time (vite-plugin-resume.js).
+   Default: visually hidden but in the DOM (screen readers, crawlers, ATS).
+   Reading view: html.resume-open (fast path), html.no-js, body.no-webgl. */
+#resume {
   position: absolute; width: 1px; height: 1px;
   padding: 0; margin: -1px; overflow: hidden;
   clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
-#fallback-banner { display: none; }
+#resume .r-bar, #resume .r-fallback { display: none; }
 
-#resume h1 { font-family: 'Fredoka', sans-serif; font-size: 38px; line-height: 1.1; }
-#resume h2 { font-family: 'Fredoka', sans-serif; font-size: 22px; margin-top: 26px; }
-#resume .r-sub { font-size: 17px; color: #4a574f; margin-top: 4px; }
-#resume .r-period { font-size: 13px; color: #7a8a80; margin: 2px 0 8px; }
-#resume p { line-height: 1.6; }
-#resume ul { margin: 8px 0 8px 22px; }
-#resume li { margin: 4px 0; line-height: 1.5; }
-#resume a { color: var(--teal); font-weight: 600; }
+html.resume-open #resume,
+html.no-js #resume,
+body.no-webgl #resume {
+  position: fixed; inset: 0; z-index: 60;
+  width: auto; height: auto; margin: 0; clip: auto; white-space: normal;
+  overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  background: #fcf8ee; color: var(--ink);
+  font-size: 16px; line-height: 1.6;
+}
+html.resume-open #resume .r-bar,
+html.no-js #resume .r-bar,
+body.no-webgl #resume .r-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  position: sticky; top: 0; z-index: 1;
+  padding: 12px max(16px, calc((100% - 688px) / 2));
+  background: rgba(252, 248, 238, 0.94);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(52, 66, 63, 0.1);
+}
+/* Nothing to go "back" to without JS / WebGL. */
+html.no-js #resume .r-back, body.no-webgl #resume .r-back { visibility: hidden; }
+body.no-webgl #resume .r-fallback {
+  display: block; max-width: 720px; margin: 18px auto 0; padding: 0 16px;
+  font-size: 14px; color: #5d6b64;
+}
+#resume .r-back, #resume .r-pdf {
+  font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 15px;
+  text-decoration: none; border-radius: 12px; padding: 9px 14px; line-height: 1.2;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+#resume .r-back { color: var(--ink); background: rgba(0, 0, 0, 0.05); }
+#resume .r-back:hover { background: rgba(0, 0, 0, 0.09); }
+#resume .r-pdf { color: #fff; background: var(--teal); }
+#resume .r-pdf:hover { transform: translateY(-1px); }
 
-body.no-webgl { overflow: auto; background: var(--sky); }
+#resume .r-doc { max-width: 720px; margin: 0 auto; padding: 28px 16px 72px; }
+#resume h1 {
+  font-family: 'Fredoka', sans-serif; font-weight: 700;
+  font-size: clamp(34px, 8vw, 46px); line-height: 1.05; letter-spacing: 0.2px;
+}
+#resume h1:focus { outline: none; }
+#resume .r-sub { font-size: 17px; color: #4a574f; margin-top: 6px; font-weight: 500; }
+#resume .r-summary { font-size: 17px; line-height: 1.6; margin-top: 14px; max-width: 64ch; }
+#resume .r-links { list-style: none; display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 14px; }
+#resume .r-links a { color: #2b7f7e; font-weight: 600; text-underline-offset: 3px; }
+
+#resume .r-stats {
+  list-style: none; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+  margin: 26px 0 6px;
+}
+#resume .r-stats li {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 12px 10px; border-radius: 14px; background: rgba(0, 0, 0, 0.04); text-align: center;
+}
+#resume .r-stat-num { font-family: 'Fredoka', sans-serif; font-weight: 700; font-size: 26px; line-height: 1.1; color: #2b7f7e; }
+#resume .r-stat-label { font-size: 12px; line-height: 1.3; color: #5d6b64; }
+
+#resume h2 {
+  font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 14px;
+  letter-spacing: 1px; text-transform: uppercase; color: #6a7a70;
+  margin: 38px 0 4px; padding-bottom: 8px; border-bottom: 1px solid rgba(52, 66, 63, 0.14);
+}
+#resume .r-item { padding: 18px 0 4px; }
+#resume .r-item, #resume .r-contact { scroll-margin-top: 72px; } /* clear the sticky bar on /<slug> jumps */
+#resume .r-item + .r-item { border-top: 1px dashed rgba(52, 66, 63, 0.12); }
+#resume h3 { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 21px; line-height: 1.2; }
+#resume .r-meta { font-size: 14px; color: #6a7a70; margin-top: 2px; }
+#resume .r-lede { margin-top: 8px; color: #4a574f; }
+#resume ul:not(.r-links):not(.r-stats) { margin: 8px 0 8px 20px; }
+#resume li { margin: 5px 0; line-height: 1.5; }
+#resume section > p { margin-top: 10px; }
+#resume a:focus-visible, #resume-btn:focus-visible { outline: 3px solid #2b7f7e; outline-offset: 2px; }
+
+/* Reading view covers the town: take the HUD out of view and the tab order. */
+html.resume-open #topnav, html.resume-open #mute, html.resume-open #resume-btn,
+html.resume-open #nav-arrows, html.resume-open #prompt, html.resume-open #controls-hint,
+html.resume-open #card, html.resume-open #card-backdrop { visibility: hidden; }
+
+@media (max-width: 560px) {
+  #resume .r-stats { grid-template-columns: repeat(2, 1fr); }
+  #resume .r-doc { padding-top: 22px; }
+}
+
+/* No JS or no WebGL: the résumé is the page. */
+html.no-js #scene, html.no-js #topnav, html.no-js #controls-hint, html.no-js #mute,
+html.no-js #resume-btn, html.no-js #nav-arrows, html.no-js #prompt, html.no-js #preloader { display: none !important; }
 body.no-webgl #scene,
 body.no-webgl #topnav,
 body.no-webgl #controls-hint,
 body.no-webgl #mute,
+body.no-webgl #resume-btn,
+body.no-webgl #nav-arrows,
 body.no-webgl #prompt,
 body.no-webgl #preloader { display: none !important; }
-body.no-webgl #fallback-banner {
-  display: block; position: relative; z-index: 2;
-  max-width: 700px; margin: 36px auto 0; padding: 0 24px;
-  text-align: center; color: var(--ink); font-size: 15px; opacity: 0.85;
+
+/* ── HUD: Résumé (fast path) ───────────────────────────────────────────── */
+/* Visible from first paint — above the preloader, not gated on body.ready. */
+#resume-btn {
+  position: fixed; top: 18px; right: 72px; z-index: 51;
+  height: 42px; padding: 0 15px 0 12px; border-radius: 12px;
+  display: flex; align-items: center; gap: 7px;
+  background: #fcf8ee; color: var(--ink);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 6px 18px rgba(20, 40, 40, 0.16);
+  font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 15px;
+  text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
-body.no-webgl #resume {
-  position: static; width: auto; height: auto; clip: auto;
-  margin: 16px auto 60px; padding: 0 26px; overflow: visible; white-space: normal;
-  max-width: 700px; color: var(--ink);
-}
+#resume-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(20, 40, 40, 0.2); }
+#resume-btn svg { width: 18px; height: 18px; color: var(--teal); }
 
 /* ── Reduced motion ────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
@@ -216,11 +304,20 @@ body.ready #nav-arrows button { opacity: 1; }
   font-size: 16px;
   cursor: pointer;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  /* One line, always: a fixed box at left:50% shrink-wraps to half the
+     viewport, which wrapped "Story Squad / tap to read" on phones. */
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  white-space: nowrap;
+  transition: opacity 0.25s ease, transform 0.25s ease, bottom 0.35s ease;
 }
+/* While the controls hint is up, sit just above it instead of on top of it.
+   --hint-top (distance from viewport bottom to the hint's top edge) is
+   measured in main.js. */
+#controls-hint:not(.hidden) ~ #prompt { bottom: calc(var(--hint-top, 84px) + 12px); }
 #prompt.hidden { opacity: 0; pointer-events: none; transform: translateX(-50%) translateY(8px); }
-#prompt .prompt-key { display: flex; align-items: center; gap: 6px; font-size: 13px; opacity: 0.92; }
-#prompt-name { text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); }
+#prompt .prompt-key { display: flex; align-items: center; gap: 6px; font-size: 13px; opacity: 0.92; flex: none; }
+#prompt-name { text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 
 /* ── Content card ──────────────────────────────────────────────────────── */
 #card-backdrop {
@@ -291,4 +388,11 @@ body.ready #nav-arrows button { opacity: 1; }
   #card { padding: 26px 22px; }
   .card-title { font-size: 25px; }
   .card-stats { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Narrow phones: stack the brand, tuck the HUD buttons in (after #mute's base rule). */
+@media (max-width: 480px) {
+  #topnav { flex-direction: column; gap: 0; padding: 16px 18px; }
+  #resume-btn { top: 14px; right: 64px; height: 40px; padding: 0 12px 0 10px; font-size: 14px; }
+  #mute { top: 14px; right: 16px; width: 40px; height: 40px; }
 }

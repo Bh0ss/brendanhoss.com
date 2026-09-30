@@ -1,44 +1,131 @@
 import './style.css';
 import { Town } from './town/Town.js';
-import { LANDMARKS } from './data.js';
 import { track } from './analytics.js';
+import { parsePath, pathForLandmark, RESUME_PATH, HOME_PATH } from './routes.js';
+import { createResumeView, isResumeOpen, syncResumeTabbable, RESUME_EVENT } from './resume-view.js';
 
 // Résumé PDF is high-value job-search signal. One site-wide delegate catches
-// every /resume.pdf link click — card actions and the fallback résumé view —
-// so we get a single resume_view per click regardless of where it lives.
+// every /resume.pdf link click — card actions and the résumé page view — so we
+// get a single event per click regardless of where it lives. Kept as
+// resume_view (its historical name) with source 'pdf', so it can be told apart
+// from the page-view sources (hud | intro | deeplink).
 document.addEventListener('click', (e) => {
   const a = e.target.closest && e.target.closest('a[href]');
   if (a && /\/resume\.pdf(?:[?#]|$)/.test(a.getAttribute('href') || '')) {
-    track('resume_view');
+    track('resume_view', { source: 'pdf' });
   }
 });
 
-// Render all content as real semantic HTML (always present, visually hidden by
-// default) so screen readers, search engines, ATS, and no-WebGL visitors get
-// the full story — not just what the 3D world surfaces.
-(function buildResume() {
-  const el = document.getElementById('resume');
-  if (!el) return;
-  const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
-  let h = `<h1>Brendan Hoss</h1><p class="r-sub">Solutions Engineer · Branford, CT</p>`;
-  for (const lm of LANDMARKS) {
-    if (lm.id === 'intro') continue;
-    h += `<section><h2>${esc(lm.title)}</h2>`;
-    if (lm.period) h += `<p class="r-period">${esc(lm.period)}</p>`;
-    if (lm.intro) h += `<p>${esc(lm.intro)}</p>`;
-    if (lm.points) h += '<ul>' + lm.points.map((p) => `<li>${esc(p)}</li>`).join('') + '</ul>';
-    if (lm.stats) h += '<ul>' + lm.stats.map((s) => `<li>${esc(s.num + s.suffix)} — ${esc(s.label)}</li>`).join('') + '</ul>';
-    if (lm.achievements) h += '<ul>' + lm.achievements.map((a) => `<li>${esc(a)}</li>`).join('') + '</ul>';
-    if (lm.verticals) h += `<p><strong>Industries:</strong> ${esc(lm.verticals.join(', '))}</p>`;
-    if (lm.skills) h += `<p><strong>Toolkit:</strong> ${esc(lm.skills.join(', '))}</p>`;
-    if (lm.email) h += `<p>Email: <a href="mailto:${esc(lm.email)}">${esc(lm.email)}</a></p>`;
-    if (lm.linkedin) h += `<p><a href="${esc(lm.linkedin)}" target="_blank" rel="noopener noreferrer">LinkedIn</a></p>`;
-    if (lm.github) h += `<p><a href="${esc(lm.github)}" target="_blank" rel="noopener noreferrer">GitHub</a></p>`;
-    h += '</section>';
+// The full résumé is pre-rendered into <main id="resume"> at build time
+// (vite-plugin-resume.js) — nothing to render here.
+
+// ── Fast path + deep links ────────────────────────────────────────────────
+// App state is { résumé view open?, which card is open? }; the URL mirrors it:
+// /resume, /<landmark-slug>, or /. Leaving "/" pushes a history entry (so Back
+// returns to the plain town); moving between non-home paths replaces it; going
+// home pops our own entry, or replaces when there is none (a deep-link landing).
+let town = null;
+let applying = false;   // true while applying a URL → state (don't write URL back)
+let ignorePop = false;  // our own history.back() in flight
+
+function desiredPath() {
+  if (isResumeOpen()) return RESUME_PATH;
+  const lm = town && town.ui.isOpen() ? town.ui.current : null;
+  return lm ? pathForLandmark(lm.id) : HOME_PATH;
+}
+
+function syncUrl() {
+  if (applying) return;
+  const path = desiredPath();
+  if (location.pathname === path) return;
+  const url = path + location.search + location.hash;
+  const fromHome = location.pathname === HOME_PATH;
+  if (path === HOME_PATH) {
+    if (history.state && history.state.bhFromHome) { ignorePop = true; history.back(); }
+    else history.replaceState(null, '', url);
+  } else if (fromHome) {
+    history.pushState({ bhFromHome: true }, '', url);
+  } else {
+    history.replaceState(history.state, '', url);
   }
-  h += `<p><a href="/resume.pdf" download="Brendan_Hoss_Resume_2026.pdf">Download résumé (PDF)</a></p>`;
-  el.innerHTML = h;
-})();
+}
+
+const resumeView = createResumeView({ onClose: syncUrl });
+
+function openResume(source) {
+  if (town && town.ui.isOpen() && !isResumeOpen()) { applying = true; town.ui.closeCard(); applying = false; }
+  resumeView.open(source);
+  syncUrl();
+}
+
+// HUD "Résumé" is a real <a href="/resume">; upgrade plain left-clicks in place.
+document.getElementById('resume-btn')?.addEventListener('click', (e) => {
+  if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  e.preventDefault();
+  openResume('hud');
+});
+// Intro card's "Just the highlights" (ui.js dispatches this).
+document.addEventListener('bh:resume-request', (e) => openResume(e.detail?.source || 'intro'));
+
+// Apply a parsed route to the UI without writing the URL back.
+function applyRoute(route, { source = 'history' } = {}) {
+  applying = true;
+  try {
+    if (route.type === 'resume') {
+      if (town && town.ui.isOpen()) town.ui.closeCard();
+      resumeView.open(source);
+    } else {
+      resumeView.close();
+      if (route.type === 'landmark') {
+        if (town) town.goToLandmarkById(route.id);
+        else pendingLandmark = route.id;
+      } else if (town && town.ui.isOpen()) {
+        town.ui.closeCard();
+      }
+    }
+  } finally { applying = false; }
+}
+
+addEventListener('popstate', () => {
+  if (ignorePop) { ignorePop = false; return; }
+  applyRoute(parsePath(location.pathname));
+});
+
+// Landing route. Any recognised route is rewritten to its canonical path
+// (/YALE/ → /yale, /resume// → /resume, /veoci_se → /veoci); unknown paths go
+// to /. Analytics keep the path as it was actually requested.
+let pendingLandmark = null;
+const landingPath = location.pathname;
+const landing = parsePath(landingPath);
+const canonicalPath =
+  landing.type === 'resume' ? RESUME_PATH :
+  landing.type === 'landmark' ? pathForLandmark(landing.id) : HOME_PATH;
+if (landingPath !== canonicalPath) {
+  history.replaceState(history.state, '', canonicalPath + location.search + location.hash);
+}
+if (landing.type === 'resume') {
+  // The <head> script normally showed the view already (adopt it: focus +
+  // analytics). If it didn't — the two route checks drifted — open it here so
+  // the page and the deep_link_open event always agree.
+  if (!resumeView.adoptInitial()) resumeView.open('deeplink');
+  track('deep_link_open', { target: 'resume', path: landingPath });
+} else if (landing.type === 'landmark') {
+  pendingLandmark = landing.id; // opened once the town is up (see openPendingLandmark)
+  track('deep_link_open', { target: landing.id, path: landingPath });
+}
+
+function openPendingLandmark() {
+  if (!pendingLandmark) return;
+  const id = pendingLandmark;
+  pendingLandmark = null;
+  if (town) {
+    applying = true;
+    try { town.goToLandmarkById(id); } finally { applying = false; }
+  } else if (document.body.classList.contains('no-webgl')) {
+    // No 3D: the résumé is the page. Scroll to that landmark's section.
+    document.getElementById('r-' + (pathForLandmark(id).slice(1) || id))?.scrollIntoView();
+  }
+}
 
 const mobile = window.matchMedia('(max-width: 768px)').matches || window.innerWidth < 768;
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -53,7 +140,6 @@ if (window.matchMedia('(hover: none), (pointer: coarse)').matches) {
 }
 
 const canvas = document.getElementById('scene');
-let town;
 // Wait for fonts before constructing the scene: Town draws Fredoka into canvas
 // sign textures (landmarks.js), which would otherwise render in the fallback
 // font on first load until the web font finishes loading.
@@ -69,19 +155,47 @@ function hidePreloader() {
   if (preloader) preloader.classList.add('hidden');
 }
 
-document.fonts.ready.then(() => {
-  try {
-    town = new Town(canvas, { mobile, reducedMotion });
-    town.onFirstFrame = hidePreloader;
-    // If reveal already ran (e.g. the hard fallback fired before fonts
-    // resolved), start the loop now — reveal's `if (town)` would have skipped it.
-    if (revealed) town.start();
-  } catch (err) {
-    console.error('WebGL init failed:', err);
-    document.body.classList.add('no-webgl'); // CSS hides the preloader on this path
-    hidePreloader();
-  }
-});
+let townRequested = false;
+function buildTown() {
+  if (townRequested) return;
+  townRequested = true;
+  setTimeout(hidePreloader, 6000); // safety net: never strand the loader on-screen
+  document.fonts.ready.then(() => {
+    try {
+      town = new Town(canvas, { mobile, reducedMotion });
+      town.onFirstFrame = hidePreloader;
+      town.ui.onChange = syncUrl;
+      // If reveal already ran (e.g. the hard fallback fired before fonts
+      // resolved, or the town was deferred), start the loop now — reveal's
+      // `if (town)` would have skipped it.
+      if (revealed) { town.start(); openPendingLandmark(); }
+    } catch (err) {
+      console.error('WebGL init failed:', err);
+      document.body.classList.add('no-webgl'); // CSS hides the preloader on this path
+      syncResumeTabbable(); // the résumé is now the visible page
+      hidePreloader();
+      openPendingLandmark();
+    }
+  });
+}
+
+// A /resume landing doesn't build the town behind the reading view: it would
+// be parked (hidden) the whole time, and a recruiter who only reads never
+// needs it. Build it on the first close instead ("Explore the town", Esc, or
+// Back to a town route). The preloader, still up under the reading view,
+// covers the build and fades on the town's first frame. The build waits a
+// frame + task so the close (and that preloader) paints before the
+// synchronous scene construction blocks the thread.
+if (landing.type === 'resume' && isResumeOpen()) {
+  const onResumeView = (e) => {
+    if (e.detail?.open) return;
+    document.removeEventListener(RESUME_EVENT, onResumeView);
+    requestAnimationFrame(() => setTimeout(buildTown, 0));
+  };
+  document.addEventListener(RESUME_EVENT, onResumeView);
+} else {
+  buildTown();
+}
 
 // reveal → chrome fades in + render loop starts (first frame then hides loader).
 let revealed = false;
@@ -89,15 +203,24 @@ function reveal() {
   if (revealed) return;
   revealed = true;
   document.body.classList.add('ready');
-  if (town) town.start();
+  if (town) { town.start(); openPendingLandmark(); }
 }
 if (document.readyState === 'complete') setTimeout(reveal, 300);
 else window.addEventListener('load', () => setTimeout(reveal, 300));
 setTimeout(reveal, 2500);        // hard fallback: ensure the loop starts
-setTimeout(hidePreloader, 6000); // safety net: never strand the loader on-screen
 
 // Dismiss the controls hint on first interaction.
 const hint = document.getElementById('controls-hint');
+// Publish the hint's top edge (px above the viewport bottom) so the proximity
+// prompt can sit above it instead of overlapping it at spawn (style.css).
+function measureHint() {
+  if (!hint) return;
+  const top = Math.round(innerHeight - hint.getBoundingClientRect().top);
+  if (top > 0) document.documentElement.style.setProperty('--hint-top', top + 'px');
+}
+measureHint();
+document.fonts.ready.then(measureHint); // Fredoka kbd glyphs can change its height
+addEventListener('resize', measureHint);
 function dismissHint() {
   if (hint) hint.classList.add('hidden');
   removeEventListener('keydown', dismissHint);

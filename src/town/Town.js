@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { SKY } from './palette.js';
+import { LIGHT, SUN_DIR } from './palette.js';
 import { buildWorld } from './world.js';
 import { buildLandmarks } from './landmarks.js';
 import { createWater } from './water.js';
@@ -11,6 +11,7 @@ import { createUI } from './ui.js';
 import { createAudio } from './audio.js';
 import { byId } from '../data.js';
 import { track } from '../analytics.js';
+import { RESUME_EVENT, isResumeOpen } from '../resume-view.js';
 
 // Third-person town. Owns renderer/scene/camera + the post stack, drives the
 // player from input, and runs a smoothed follow-cam you can orbit and zoom.
@@ -22,6 +23,11 @@ export class Town {
     this.reducedMotion = reducedMotion;
     this.running = false;
     this.time = 0;
+    // Render holds: while any reason is held (the résumé view or a content card
+    // covers the scene) the loop parks after drawing the current frame, and
+    // restarts when the last hold is released. See hold() / _loop().
+    this._holds = new Set();
+    this._parked = false;
 
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
 
@@ -53,8 +59,10 @@ export class Town {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.06;
+    // Neutral (Khronos PBR Neutral) keeps the authored pastel palette's hues —
+    // ACES skewed the warm golden-hour tones toward orange and desaturated them.
+    this.renderer.toneMapping = THREE.NeutralToneMapping;
+    this.renderer.toneMappingExposure = 1.0;
 
     this.scene = new THREE.Scene();
 
@@ -63,7 +71,7 @@ export class Town {
     this.camPitch = 0.60;   // higher angle → looking down on a tiny world
     this.camDist = mobile ? 27 : 24;
 
-    this.sunDir = new THREE.Vector3(-40, 60, 30).normalize();
+    this.sunDir = SUN_DIR.clone();   // golden-hour sun, shared with sky + water
     this._lights();
 
     this.world = buildWorld(this.scene);
@@ -81,6 +89,15 @@ export class Town {
     }
     this.audio = createAudio();
     this.ui = createUI(this.audio);
+
+    // Fast-path handoff (resume-view.js contract): the reading view covers the
+    // canvas, so stop rendering and pause the music bed while it's open. A
+    // /resume landing opens it before Town exists — adopt that initial state.
+    const onResume = (open) => { this.hold('resume', open); this.audio.setDucked(open); };
+    document.addEventListener(RESUME_EVENT, (e) => onResume(!!e.detail?.open));
+    if (isResumeOpen()) onResume(true);
+    // A content card dims + blurs the scene behind it: park the loop there too.
+    this.ui.onVisibility = (shown) => this.hold('card', shown);
     this.nearest = null;
     this._lastStep = 0;
     this.motion = reducedMotion ? 0.4 : 1;
@@ -142,7 +159,7 @@ export class Town {
     // permanent black screen on a laptop GPU reset / mobile backgrounding).
     canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); this.running = false; });
     canvas.addEventListener('webglcontextrestored', () => {
-      if (this._loop && !this.running) { this.running = true; this._last = performance.now(); requestAnimationFrame(this._loop); }
+      if (this._loop && !this.running) { this.running = true; this._parked = false; this._last = performance.now(); requestAnimationFrame(this._loop); }
     });
 
     // Post stack — degrade gracefully to direct rendering if it fails.
@@ -155,10 +172,12 @@ export class Town {
   }
 
   _lights() {
-    const hemi = new THREE.HemisphereLight(SKY.top, 0x7d8a6a, 0.85);
+    // Golden hour: warm low key sun, cool sky fill, warm grass bounce. No
+    // ambient — the hemisphere is the only fill, so shadows stay cool and read.
+    const hemi = new THREE.HemisphereLight(LIGHT.hemiSky, LIGHT.hemiGround, 1.45);
     this.scene.add(hemi);
 
-    const sun = new THREE.DirectionalLight(0xfff4e2, 1.25);
+    const sun = new THREE.DirectionalLight(LIGHT.sun, 1.8);
     sun.position.copy(this.sunDir).multiplyScalar(80);
     sun.castShadow = true;
     sun.shadow.radius = 1.5;                 // tight penumbra (soft radius caused peter-panning)
@@ -168,9 +187,8 @@ export class Town {
     sun.shadow.camera.top = s; sun.shadow.camera.bottom = -s;
     sun.shadow.camera.near = 1; sun.shadow.camera.far = 260;
     sun.shadow.bias = -0.0004;
-    sun.shadow.normalBias = 0.006;           // low → shadows stay attached at contact
+    sun.shadow.normalBias = 0.02;            // low sun → a touch more normal bias vs acne
     this.scene.add(sun);
-    this.scene.add(new THREE.AmbientLight(0xffffff, 0.10));
   }
 
   _addBlobShadow() {
@@ -212,6 +230,32 @@ export class Town {
     this.camYaw = heading;
     this._updateCamera(1, true);
     this.ui.openCard(it.data);
+    this._kick();   // card→card hop while parked: draw the new spot once
+  }
+
+  // Hold/release rendering for a named reason ('resume' | 'card').
+  hold(reason, on) {
+    if (on) this._holds.add(reason); else this._holds.delete(reason);
+    if (!this._holds.size) this._kick();
+  }
+
+  // Wake a parked loop. With holds still active it draws one frame and parks
+  // again; with none it resumes normally. dt restarts from now (no jump).
+  _kick() {
+    if (!this._parked || !this.running) return;
+    this._parked = false;
+    this._last = performance.now();
+    requestAnimationFrame(this._loop);
+  }
+
+  // Public hook for deep links (/yale etc., wired in main.js): hop to a landmark
+  // by id and open its card, reusing the prev/next teleport above.
+  goToLandmarkById(id) {
+    const i = this.landmarks.interactables.findIndex((it) => it.id === id);
+    if (i < 0) return false;
+    this._navIndex = i;
+    this.gotoLandmark(0);
+    return true;
   }
 
   start() {
@@ -226,9 +270,16 @@ export class Town {
     // the gazebo (the intro prompt is in range at spawn).
     let seen = false;
     try { seen = sessionStorage.getItem('bh_seen_intro') === '1'; } catch (_) { /* private mode */ }
+    // Only mark it seen if it actually opened: openCard() declines the intro
+    // over a deep-linked card or the résumé view, and that visitor should
+    // still get the welcome on their next plain landing this session.
     if (!seen) {
-      setTimeout(() => this.ui.openCard(byId.intro), 650);
-      try { sessionStorage.setItem('bh_seen_intro', '1'); } catch (_) { /* ignore */ }
+      setTimeout(() => {
+        this.ui.openCard(byId.intro);
+        if (this.ui.current === byId.intro) {
+          try { sessionStorage.setItem('bh_seen_intro', '1'); } catch (_) { /* ignore */ }
+        }
+      }, 650);
     }
   }
 
@@ -238,6 +289,7 @@ export class Town {
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.post?.resize(w, h);
+    this._kick();   // parked behind a card: redraw at the new size
   }
 
   _cameraBasis() {
@@ -305,7 +357,7 @@ export class Town {
     this.blob.position.set(pp.x, 0.03, pp.z);
 
     this.water.update(t);
-    this.atmosphere.update(dt, t);
+    this.atmosphere.update(dt * this.motion, t);   // reduced-motion-scaled, like t
 
     // wind sway on tree crowns
     for (const tr of this.world.trees) {
@@ -324,7 +376,13 @@ export class Town {
 
   _loop(now) {
     if (!this.running) return;
-    requestAnimationFrame(this._loop);
+    // Park (don't schedule) once held — but never before the first frame.
+    // _parked is set up front, before update()/render(): if either throws on
+    // the parking frame, _kick() can still wake the loop (it only acts on a
+    // parked loop), so a throw can't freeze the town for good.
+    const park = this._holds.size > 0 && !!this._firstFrameDone;
+    if (park) this._parked = true;
+    else requestAnimationFrame(this._loop);
     const dt = Math.min(0.05, (now - this._last) / 1000);
     this._last = now;
     this.update(dt);
@@ -338,5 +396,8 @@ export class Town {
       this._firstFrameDone = true;
       this.onFirstFrame?.();
     }
+    // Held: this frame (showing the latest state) stays on the canvas and
+    // nothing is scheduled until hold()/_kick() wakes us. Parking happens on
+    // the frame after a hold starts, so a just-teleported view is drawn first.
   }
 }

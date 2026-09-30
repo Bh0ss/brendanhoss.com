@@ -22,6 +22,13 @@ export const ROUTE = [
   [4, 44],     // the harbor (by the water)
 ];
 
+// `slug` is the landmark's deep-link path (brendanhoss.com/<slug> opens the
+// town at that landmark with its card up). The intro has no slug: it IS "/".
+//
+// `title` is the narrative chapter name (cards). `role` / `org` are the plain
+// résumé heading ("Role — Org") that recruiters and ATS parsers read on the
+// /resume page (vite-plugin-resume.js). Both come from public/resume.pdf
+// and the existing card text; nothing new is claimed. Signs read `sign`.
 export const LANDMARKS = [
   {
     id: 'intro', kind: 'intro',
@@ -37,9 +44,11 @@ export const LANDMARKS = [
     ],
   },
   {
-    id: 'gateway', kind: 'edu',
+    id: 'gateway', slug: 'gateway', kind: 'edu',
     sign: 'Gateway CC',
     title: 'The Foundation',
+    role: "Associate's Degree, Computer Science",
+    org: 'Gateway Community College',
     period: 'Gateway Community College · 2014–2017',
     accent: 0x4a9eff,
     pos: [-54, -16],
@@ -51,9 +60,11 @@ export const LANDMARKS = [
     ],
   },
   {
-    id: 'uconn', kind: 'edu',
+    id: 'uconn', slug: 'uconn', kind: 'edu',
     sign: 'UConn',
     title: 'Going Deeper',
+    role: 'Software Engineering (85 credits toward B.S.)',
+    org: 'University of Connecticut',
     period: 'University of Connecticut · 2018',
     accent: 0x6bb8ff,
     pos: [-40, -46],
@@ -64,9 +75,11 @@ export const LANDMARKS = [
     ],
   },
   {
-    id: 'lambda', kind: 'edu',
+    id: 'lambda', slug: 'lambda', kind: 'edu',
     sign: 'Lambda School',
     title: 'The Data Chapter',
+    role: 'Data Science Program',
+    org: 'Lambda School',
     period: 'Lambda School · Data Science · 2019–2020',
     accent: 0x00d4aa,
     pos: [-8, -57],
@@ -78,9 +91,11 @@ export const LANDMARKS = [
     ],
   },
   {
-    id: 'story', kind: 'work',
+    id: 'story', slug: 'story-squad', kind: 'work',
     sign: 'Story Squad',
     title: 'Story Squad',
+    role: 'Data Science Intern',
+    org: 'Story Squad',
     period: 'Data Science Intern · 2021–2022',
     accent: 0x00d4aa,
     pos: [46, -42],
@@ -91,9 +106,11 @@ export const LANDMARKS = [
     ],
   },
   {
-    id: 'yale', kind: 'work',
+    id: 'yale', slug: 'yale', kind: 'work',
     sign: 'Yale',
     title: 'The Proving Ground',
+    role: 'Test Site Coordinator & Site Lead',
+    org: 'Yale University',
     period: 'Yale University · 2021–2023',
     accent: 0x6bb8ff,
     pos: [61, -12],
@@ -105,9 +122,11 @@ export const LANDMARKS = [
     ],
   },
   {
-    id: 'catalyst', kind: 'work',
+    id: 'catalyst', slug: 'veoci-ops', kind: 'work',
     sign: 'Veoci · Ops',
     title: 'The Catalyst',
+    role: 'Office Manager & IT Coordinator',
+    org: 'Veoci Inc.',
     period: 'Office Manager & IT Coordinator · 2022–2023',
     accent: 0xffb347,
     pos: [61, 14],
@@ -120,9 +139,11 @@ export const LANDMARKS = [
     ],
   },
   {
-    id: 'veoci_se', kind: 'hero',
+    id: 'veoci_se', slug: 'veoci', kind: 'hero',
     sign: 'Veoci',
     title: 'Solutions Engineer',
+    role: 'Solutions Engineer',
+    org: 'Veoci Inc.',
     period: 'Veoci Inc. · 2023–Present',
     accent: 0x9f6aff,
     pos: [44, 36],
@@ -146,7 +167,7 @@ export const LANDMARKS = [
     verticals: ['Aviation', 'Healthcare', 'Higher Ed', 'Enterprise', 'Government', 'Utilities'],
   },
   {
-    id: 'contact', kind: 'contact',
+    id: 'contact', slug: 'contact', kind: 'contact',
     sign: 'Harbor',
     title: "Let's build something.",
     period: 'Brendan Hoss',

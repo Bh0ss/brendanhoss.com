@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import { GROUND, SKY } from './palette.js';
 
+// Golden-hour pass: palette-driven colours, a warm glitter path toward the low
+// sun, and fog-aware (far water now fades into the same horizon haze as land).
+
 // Stylized shoreline water. The surface is one big plane that DISCARDS every
 // fragment shoreward of the waterline, so it never pokes through the grass no
 // matter how the land is shaped. A few summed sines ripple it, a fresnel term
@@ -13,20 +16,24 @@ export function createWater({ waterline = 56, sunDir }) {
 
   const mat = new THREE.ShaderMaterial({
     transparent: true,
-    uniforms: {
+    fog: true,
+    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, {
       uTime: { value: 0 },
       // Deep, desaturated ocean blue (was teal — teal over the green seabed read
       // murky-green through the translucent surface). Shallow is a lighter aqua for
       // the near-shore band; deep water is opaque so the green ground never shows.
-      uDeep: { value: new THREE.Color(0x2f6c8f) },
-      uShallow: { value: new THREE.Color(0x6fb4c4) },
+      uDeep: { value: new THREE.Color(GROUND.waterDeep) },
+      uShallow: { value: new THREE.Color(GROUND.water) },
       uFoam: { value: new THREE.Color(0xfbfdfb) },
       uSun: { value: sunDir.clone().normalize() },
       uShore: { value: waterline },
       uSkyTop: { value: new THREE.Color(SKY.top) },
       uSkyHorizon: { value: new THREE.Color(SKY.horizon) },
-    },
+      uGlow: { value: new THREE.Color(SKY.glow) },
+    }]),
     vertexShader: /* glsl */`
+      #include <common>
+      #include <fog_pars_vertex>
       uniform float uTime;
       uniform float uShore;
       varying vec3 vWorld;
@@ -58,11 +65,15 @@ export function createWater({ waterline = 56, sunDir }) {
         vNormalW = normalize(vec3(raw - wave(wp.xz + vec2(e,0.0)), e, raw - wave(wp.xz + vec2(0.0,e))));
         vWave = raw;
         vWorld = wp.xyz;
-        gl_Position = projectionMatrix * viewMatrix * wp;
+        vec4 mvPosition = viewMatrix * wp;
+        gl_Position = projectionMatrix * mvPosition;
+        #include <fog_vertex>
       }
     `,
     fragmentShader: /* glsl */`
-      uniform vec3 uDeep, uShallow, uFoam, uSun, uSkyTop, uSkyHorizon;
+      #include <common>
+      #include <fog_pars_fragment>
+      uniform vec3 uDeep, uShallow, uFoam, uSun, uSkyTop, uSkyHorizon, uGlow;
       uniform float uShore, uTime;
       varying vec3 vWorld;
       varying vec3 vNormalW;
@@ -93,12 +104,15 @@ export function createWater({ waterline = 56, sunDir }) {
         vec3 R = reflect(-V, N);
         float ry = clamp(R.y * 0.5 + 0.5, 0.0, 1.0);
         vec3 sky = mix(uSkyHorizon, uSkyTop, smoothstep(0.0, 0.6, ry));
-        col = mix(col, sky, fres * 0.45);
+        col = mix(col, sky, fres * 0.3);
 
         vec3 H = normalize(uSun + V);
         float spec = pow(max(dot(N, H), 0.0), 90.0);
         float sparkle = step(0.92, hash(floor(vWorld.xz*2.0) + floor(uTime*3.0)));
-        col += spec * 1.1 + sparkle * spec * 1.8;
+        // warm glitter path toward the low sun
+        float sunPath = pow(max(dot(R, uSun), 0.0), 48.0);
+        col = mix(col, uGlow, sunPath * 0.35);
+        col += uGlow * (spec * 1.1 + sparkle * spec * 1.8);
 
         // Crest/trough relief: lighten the tops of swells, darken the troughs so
         // the rolling bands read clearly as waves marching toward the beach. Done
@@ -121,6 +135,7 @@ export function createWater({ waterline = 56, sunDir }) {
         float opaqueDepth = clamp((vWorld.z - uShore) / 14.0, 0.0, 1.0);
         float alpha = max(mix(0.82, 1.0, opaqueDepth), clamp(foam, 0.0, 1.0));
         gl_FragColor = vec4(col, alpha);
+        #include <fog_fragment>
       }
     `,
   });
