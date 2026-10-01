@@ -29,12 +29,12 @@ const list = (items) => '<ul>' + items.map((i) => `<li>${esc(i)}</li>`).join('')
 
 // Résumé heading: "Role — Org" (plain, for recruiters and ATS parsers), from
 // the role/org fields in data.js. The narrative `title` ("The Proving Ground")
-// belongs to the town's cards and is left out here. Falls back to the title
-// only if an entry has neither field.
+// belongs to the town's cards and is left out here. Every career entry must
+// carry both fields: a missing one fails the build rather than shipping a
+// résumé with a narrative heading in it.
 function heading(lm) {
-  const parts = [lm.role, lm.org].filter(Boolean);
-  if (parts.length < 2) console.warn(`[resume-prerender] ${lm.id}: missing role/org — heading falls back`);
-  return parts.length ? parts.join(' — ') : lm.title;
+  if (!lm.role || !lm.org) throw new Error(`[resume-prerender] ${lm.id}: career entry is missing ${!lm.role ? 'role' : 'org'} (src/data.js)`);
+  return `${lm.role} — ${lm.org}`;
 }
 
 // Dates only: `period` is "<org or role> · <dates>" (or just dates), and the

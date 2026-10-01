@@ -12,6 +12,15 @@ import { createAudio } from './audio.js';
 import { byId } from '../data.js';
 import { track } from '../analytics.js';
 import { RESUME_EVENT, isResumeOpen } from '../resume-view.js';
+import { DIORAMA, bootDiorama, reloadAfterContextRestore } from '../diorama/flag.js';
+
+// Follow-camera defaults per look. The diorama's buildings are taller and more detailed than the
+// classic toy town: a lower pitch shows whole rooflines (and more horizon), a longer zoom range
+// lets a guided hop frame the tallest facades.
+const CAMERA = {
+  classic: { pitch: 0.60, dist: 24, distMobile: 27, min: 11, max: 42 },
+  diorama: { pitch: 0.48, dist: 25, distMobile: 29, min: 12, max: 48 },
+};
 
 // Third-person town. Owns renderer/scene/camera + the post stack, drives the
 // player from input, and runs a smoothed follow-cam you can orbit and zoom.
@@ -68,8 +77,7 @@ export class Town {
 
     this.camera = new THREE.PerspectiveCamera(50, 1, 0.1, 1200);
     this.camYaw = Math.PI;
-    this.camPitch = 0.60;   // higher angle → looking down on a tiny world
-    this.camDist = mobile ? 27 : 24;
+    this._lookDefaults('classic');
 
     this.sunDir = SUN_DIR.clone();   // golden-hour sun, shared with sky + water
     this._lights();
@@ -100,7 +108,7 @@ export class Town {
     this.ui.onVisibility = (shown) => this.hold('card', shown);
     this.nearest = null;
     this._lastStep = 0;
-    this.motion = reducedMotion ? 0.4 : 1;
+    this.motion = reducedMotion ? 0.4 : 1;   // the diorama lowers this further (_lookDefaults)
     addEventListener('keydown', (e) => {
       if (e.code === 'KeyE' && this.nearest && !this.ui.isOpen()) this.ui.openCard(this.nearest.data);
     });
@@ -150,6 +158,11 @@ export class Town {
     this._groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     this._camTarget = new THREE.Vector3();
     this._lookTarget = new THREE.Vector3();
+    // Follow-camera collision (diorama): oriented building boxes pushed by town-build.js. Trees are
+    // never in it (the diorama dissolves them instead). Empty in the classic town: no collision.
+    this.camColliders = [];
+    this._collD = 0;                   // current (eased) collision-limited camera distance
+    this._collHeld = false;            // true while a building holds the camera in
 
     this.resize();
     addEventListener('resize', () => this.resize());
@@ -157,8 +170,12 @@ export class Town {
 
     // Pause cleanly on GPU context loss; resume when restored (avoids a
     // permanent black screen on a laptop GPU reset / mobile backgrounding).
+    // The diorama can't resume in place: three rebuilds its own state, but not the diorama's derived
+    // GPU data (PMREM environment, treeline atlas, terrain data textures). It reloads once instead
+    // (flag.js bounds it: a second loss in the session goes classic, never a loop).
     canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); this.running = false; });
     canvas.addEventListener('webglcontextrestored', () => {
+      if (this.look === 'diorama' && reloadAfterContextRestore()) return;
       if (this._loop && !this.running) { this.running = true; this._parked = false; this._last = performance.now(); requestAnimationFrame(this._loop); }
     });
 
@@ -169,6 +186,27 @@ export class Town {
       console.warn('Post-processing unavailable, rendering directly:', err);
       this.post = null;
     }
+
+    // The diorama (the default look) attaches to this town; null = classic (?look=classic, a
+    // GPU that can't run it, or an earlier fallback this session). A load failure hands the
+    // classic town back through onFallback.
+    this.diorama = DIORAMA ? bootDiorama(this, { onFallback: () => { this.diorama = null; this.camColliders.length = 0; this._lookDefaults('classic'); this._updateCamera(1, true); } }) : null;
+    this.look = this.diorama ? 'diorama' : 'classic';
+    if (this.diorama) { this._lookDefaults('diorama'); this._updateCamera(1, true); }
+  }
+
+  // Camera + motion defaults for a look. Reduced motion: the classic town slows to 0.4x; the
+  // diorama's wind, water and swell near-stop (0.05x), and the follow camera cuts instead of
+  // gliding (see _updateCamera).
+  _lookDefaults(look) {
+    const c = CAMERA[look];
+    this.look = look;
+    this.camPitchDefault = c.pitch;
+    this.camDistDefault = this.mobile ? c.distMobile : c.dist;
+    this.camPitch = c.pitch;
+    this.camDist = this.camDistDefault;
+    this._camRange = [c.min, c.max];
+    this.motion = this.reducedMotion ? (look === 'diorama' ? 0.05 : 0.4) : 1;
   }
 
   _lights() {
@@ -228,8 +266,14 @@ export class Town {
     const heading = Math.atan2(it.x - it.approach.x, it.z - it.approach.z);
     p.heading = heading; p.group.rotation.y = heading;
     this.camYaw = heading;
+    // a guided hop frames the building: default pitch, and the landmark's own framing distance
+    // when it has one (diorama buildings; town-build.js viewDistFor)
+    // (and, for a hero tower or stack, a small yaw off the facade axis and a lower pitch: town-build.js heroView)
+    if (it.viewDist) { this.camPitch = it.viewPitch ?? this.camPitchDefault; this.camDist = it.viewDist; this.camYaw = heading + (it.viewYaw || 0); this._lift = it.viewLift || 0; this._liftHold = true; }
     this._updateCamera(1, true);
-    this.ui.openCard(it.data);
+    // A hop may replace an open card with the welcome card (the › wrap from the last landmark round
+    // to the green); the welcome card's auto-open timer may not (ui.openCard). Focus stays on the arrow.
+    this.ui.openCard(it.data, { hop: true });
     this._kick();   // card→card hop while parked: draw the new spot once
   }
 
@@ -301,7 +345,7 @@ export class Town {
     const cd = this.input.takeCameraDelta();
     this.camYaw += cd.yaw;
     this.camPitch = Math.max(0.14, Math.min(0.95, this.camPitch + cd.pitch));
-    this.camDist = Math.max(11, Math.min(42, this.camDist + cd.zoom * 1.5));
+    this.camDist = Math.max(this._camRange[0], Math.min(this._camRange[1], this.camDist + cd.zoom * 1.5));
 
     const p = this.player.position;
     const horiz = Math.cos(this.camPitch) * this.camDist;
@@ -311,10 +355,79 @@ export class Town {
       p.y + vert + 2,
       p.z - Math.cos(this.camYaw) * horiz
     );
-    const k = snap ? 1 : Math.min(1, dt * 6);
+    const k = snap || this.reducedMotion ? 1 : Math.min(1, dt * 6);   // reduced motion: cuts, no glide
     this.camera.position.lerp(this._camTarget, k);
-    this._lookTarget.set(p.x, p.y + 2.4, p.z);
+    if (this.camColliders.length) this._collideCamera(dt, snap || this.reducedMotion);
+    // Look lift: a guided hop tilts the view up so the whole building reads (gotoLandmark). The
+    // first step, tap-to-walk, drag or zoom lets it settle back onto the visitor.
+    if (this._lift) {
+      const v = this.player.velocity;
+      if (cd.yaw || cd.pitch || cd.zoom || this.player.moveTarget || v.x * v.x + v.z * v.z > 0.05) this._liftHold = false;
+      if (!this._liftHold) this._lift = this.reducedMotion || this._lift < 0.02 ? 0 : this._lift * (1 - Math.min(1, dt * 2.5));
+    }
+    this._lookTarget.set(p.x, p.y + 2.4 + (this._lift || 0), p.z);
     this.camera.lookAt(this._lookTarget);
+  }
+
+  // Keep the follow camera out of buildings: cast from the visitor's head toward the camera against
+  // the collider boxes and hold the camera short of the first hit. Two casts: toward where the follow
+  // cam wants to be (sets the held distance, which eases in to a margin short of the wall, so an
+  // approaching wall pulls the camera in smoothly, and eases back out when the way clears), and toward
+  // where the camera actually is (a hard limit that only bites on a sudden block, e.g. a quick orbit).
+  _collideCamera(dt, cut) {
+    const p = this.player.position, cam = this.camera.position, tgt = this._camTarget;
+    const ox = p.x, oy = p.y + 2.4, oz = p.z;
+    const dx = cam.x - ox, dy = cam.y - oy, dz = cam.z - oz;
+    const L = Math.hypot(dx, dy, dz);
+    const Ld = Math.hypot(tgt.x - ox, tgt.y - oy, tgt.z - oz);
+    if (L < 1e-3 || Ld < 1e-3) return;
+    const SOFT = 0.8, MIN = 3;
+    // the soft cast runs fatter, so it meets a building corner before the thin hard cast does
+    const tSoft = this._castCamera(ox, oy, oz, tgt.x - ox, tgt.y - oy, tgt.z - oz, 2.2);
+    const tHard = this._castCamera(ox, oy, oz, dx, dy, dz, 0.45);
+    const want = tSoft < 1 ? Math.max(Math.min(MIN, tSoft * Ld), tSoft * Ld - SOFT) : Ld;
+    const hard = tHard < 1 ? tHard * L : Infinity;            // never past the first wall, however close
+    if (!this._collHeld) this._collD = L;                     // free last frame: start from where the camera is
+    if (cut) this._collD = want;
+    else this._collD += (want - this._collD) * Math.min(1, dt * (want < this._collD ? 10 : 3));
+    this._collD = Math.min(this._collD, hard);
+    this._collHeld = this._collD < L - 0.02;                  // eased back out past the camera: let go
+    if (this._collHeld) { const s = this._collD / L; cam.set(ox + dx * s, oy + dy * s, oz + dz * s); }
+  }
+
+  // First hit (0..1 along the segment) of a head-to-camera segment against the collider boxes; 1 = clear.
+  // Broad phase: a box is slab-tested only when its footprint circle comes near the segment in plan,
+  // so a frame tests a handful of boxes at most.
+  _castCamera(ox, oy, oz, dx, dy, dz, PAD) {
+    const sl = dx * dx + dz * dz || 1, o = this._co || (this._co = [0, 0, 0]), d = this._cd || (this._cd = [0, 0, 0]);
+    let tHit = 1;
+    for (const b of this.camColliders) {
+      const u = Math.max(0, Math.min(1, ((b.x - ox) * dx + (b.z - oz) * dz) / sl));
+      const ex = ox + dx * u - b.x, ez = oz + dz * u - b.z, rr = b.rad + PAD;
+      if (ex * ex + ez * ez > rr * rr) continue;
+      // slab test in the box frame: [across (right), y, along (facing axis, front +)]
+      const fx = Math.sin(b.face), fz = Math.cos(b.face), lx = ox - b.x, lz = oz - b.z;
+      o[0] = lx * fz - lz * fx; o[1] = oy; o[2] = lx * fx + lz * fz;
+      d[0] = dx * fz - dz * fx; d[1] = dy; d[2] = dx * fx + dz * fz;
+      // The visitor can stand inside the padding (a wall, a tight gap between houses), or even inside the
+      // bare box (a footprint corner the walk circles leave open): the pad shrinks, negative if need be,
+      // to just exclude the head. Continuous as the visitor moves, so the hit never jumps at a corner.
+      const out = Math.max(Math.abs(o[0]) - b.hw, o[2] - b.front, -b.back - o[2], oy - b.y1, b.y0 - oy);
+      const pad = Math.min(PAD, out - 0.02);
+      if (b.hw + pad <= 0 || b.front + b.back + 2 * pad <= 0) continue;
+      const lo0 = -b.hw - pad, hi0 = b.hw + pad, lo1 = b.y0 - Math.min(0, pad), hi1 = b.y1 + pad, lo2 = -b.back - pad, hi2 = b.front + pad;
+      let t0 = 0, t1 = tHit;
+      for (let a = 0; a < 3 && t0 <= t1; a++) {
+        const lo = a === 0 ? lo0 : a === 1 ? lo1 : lo2, hi = a === 0 ? hi0 : a === 1 ? hi1 : hi2;
+        if (Math.abs(d[a]) < 1e-9) { if (o[a] < lo || o[a] > hi) t1 = -1; continue; }
+        let ta = (lo - o[a]) / d[a], tb = (hi - o[a]) / d[a];
+        if (ta > tb) { const tt = ta; ta = tb; tb = tt; }
+        if (ta > t0) t0 = ta;
+        if (tb < t1) t1 = tb;
+      }
+      if (t0 <= t1 && t0 < tHit) tHit = t0;
+    }
+    return tHit;
   }
 
   update(dt) {
@@ -372,6 +485,7 @@ export class Town {
       b.position.y = b.userData.baseY + Math.sin(t * 1.3 + ph) * 0.18;
       b.rotation.z = Math.sin(t * 0.8 + ph) * 0.05;
     }
+    this.diorama?.update(dt, t);
   }
 
   _loop(now) {
@@ -380,7 +494,9 @@ export class Town {
     // _parked is set up front, before update()/render(): if either throws on
     // the parking frame, _kick() can still wake the loop (it only acts on a
     // parked loop), so a throw can't freeze the town for good.
-    const park = this._holds.size > 0 && !!this._firstFrameDone;
+    // _noPark: the diorama draws a few real frames behind the preloader before it lifts
+    // (flag.js), even when a card already holds the loop.
+    const park = this._holds.size > 0 && !!this._firstFrameDone && !this._noPark;
     if (park) this._parked = true;
     else requestAnimationFrame(this._loop);
     const dt = Math.min(0.05, (now - this._last) / 1000);

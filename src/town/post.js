@@ -23,7 +23,7 @@ import { VerticalTiltShiftShader } from 'three/addons/shaders/VerticalTiltShiftS
 
 // Finish: optional FXAA (lite), then painterly grade (gentle S-contrast,
 // warm-highlight / cool-shadow split tone, saturation), vignette and grain.
-const FinishShader = {
+export const FinishShader = {
   defines: { FXAA: 0 },
   uniforms: {
     tDiffuse: { value: null },

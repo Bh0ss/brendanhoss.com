@@ -8,10 +8,10 @@
 // Contract for the town lane: every open/close dispatches a DOM event
 //   document → 'bh:resumeview'  detail: { open: boolean, source: string|null }
 // source is 'hud' | 'intro' | 'deeplink' | 'history' on open, null on close.
-// Listeners: Town holds its render loop and ducks the music while open
-// (Town.js), and main.js builds the town on the first { open: false } after a
-// /resume landing (the town is deferred until then). `isResumeOpen()` gives
-// the current state synchronously.
+// Listeners: Town holds its render loop and fades the music out, then pauses
+// it, while open (Town.js), and main.js builds the town on the first
+// { open: false } after a /resume landing (the town is deferred until then).
+// `isResumeOpen()` gives the current state synchronously.
 //
 // While the markup is only visually hidden (town mode), its links are taken
 // out of the Tab order (tabindex=-1) so keyboard focus can't land on invisible

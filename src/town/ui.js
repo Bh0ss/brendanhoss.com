@@ -93,6 +93,7 @@ export function createUI(audio = null) {
   let open = false;
   let lastFocused = null;
   let hideTimer = 0;
+  let showFrame = 0;   // openCard's deferred "show" frame; closeCard cancels it
 
   // Trap Tab within the card + the nav arrows while it's open. Document-level so
   // it also catches Tab while focus is on an arrow (outside the card).
@@ -117,16 +118,24 @@ export function createUI(audio = null) {
     }
   }
 
-  function openCard(lm) {
+  // opts.hop: a ‹ › / deep-link hop (Town.gotoLandmark), which may replace an open card with the
+  // welcome card.
+  function openCard(lm, { hop = false } = {}) {
     if (!lm) return;
     // No cards over the résumé page view (E-key / prompt taps behind it).
     if (isResumeOpen()) return;
     // The auto-opening welcome card never replaces a card that's already up
     // (e.g. a /yale deep link opened before the intro's 650ms timer fired).
-    if (lm.kind === 'intro' && open) return;
+    if (lm.kind === 'intro' && open && !hop) return;
     // Key engagement signal: which project/section a visitor actually opens.
     // The intro card isn't a "section" — it's covered by experience_start.
-    if (lm.kind !== 'intro') track('landmark_view', { landmark: lm.id });
+    // On our own fallback reload (main.js sets replayLandmark), the deep-linked card reopening is
+    // the same view the first load already reported: skip that one event.
+    if (lm.kind !== 'intro') {
+      const replayed = api.replayLandmark === lm.id;
+      api.replayLandmark = null;
+      if (!replayed) track('landmark_view', { landmark: lm.id });
+    }
     // Hopping card→card with an arrow keeps focus on that arrow, and keeps the
     // original pre-card focus target for when the card finally closes.
     const keepFocus = open && navBtns.includes(document.activeElement);
@@ -140,7 +149,12 @@ export function createUI(audio = null) {
     backdrop.classList.remove('hidden');
     prompt.classList.add('hidden');
     audio?.ui('open');
-    requestAnimationFrame(() => {
+    // A close (Back, Esc) or another open can land before this frame runs (a slow
+    // frame: low-end GPU, shader compile after a hop). Cancel the stale one so it
+    // can't re-show a closed card or steal focus to its hidden close button.
+    cancelAnimationFrame(showFrame);
+    showFrame = requestAnimationFrame(() => {
+      showFrame = 0;
       card.classList.add('shown');
       animateCounters(cardBody);
       if (!keepFocus) closeBtn.focus();
@@ -153,6 +167,8 @@ export function createUI(audio = null) {
     if (!open) return;
     open = false;
     api.current = null;
+    cancelAnimationFrame(showFrame);
+    showFrame = 0;
     card.classList.remove('shown');
     backdrop.classList.add('hidden');
     hideTimer = setTimeout(() => card.classList.add('hidden'), 260);
@@ -197,6 +213,8 @@ export function createUI(audio = null) {
   // main.js to keep the URL in sync with the card. onVisibility(bool) is Town's
   // own hook (card shown/hidden → pause/resume rendering); kept separate so the
   // two owners never overwrite each other.
-  const api = { setPrompt, openCard, closeCard, isOpen: () => open || isResumeOpen(), current: null, onChange: null, onVisibility: null };
+  // replayLandmark (main.js): on a fallback-reload replay, the landing landmark whose first
+  // landmark_view was already reported by the load before the reload.
+  const api = { setPrompt, openCard, closeCard, isOpen: () => open || isResumeOpen(), current: null, onChange: null, onVisibility: null, replayLandmark: null };
   return api;
 }

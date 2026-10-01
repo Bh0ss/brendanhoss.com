@@ -33,7 +33,14 @@
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-    gtag('config', 'G-WBHYXKGD0V');
+    // Our own reload (diorama fallback / context restore, src/diorama/flag.js RELOAD_KEY) replays a
+    // page the visitor already viewed: configure GA without a second page_view.
+    (function () {
+      var replay = false;
+      try { replay = !!sessionStorage.getItem('bh_fallback_reload'); } catch (e) { /* private mode */ }
+      if (replay) gtag('config', 'G-WBHYXKGD0V', { send_page_view: false });
+      else gtag('config', 'G-WBHYXKGD0V');
+    })();
   </script>
   <script type="application/ld+json">
   {
@@ -51,7 +58,7 @@
   </script>
   <!-- Critical, inline loader styles. These must live in the document head (not
        in the JS-bundled style.css) so the preloader paints on first parse —
-       before the ~680KB module bundle downloads and executes. Fredoka is
+       before the module bundle (and, off /resume, the 3D chunk) downloads and executes. Fredoka is
        preloaded above, so declaring the @font-face here renders the wordmark
        in-brand immediately. -->
   <style>
@@ -88,9 +95,25 @@
       0%, 100% { opacity: 0.35; transform: translateY(0); }
       50%      { opacity: 1;    transform: translateY(-5px); }
     }
+    /* Real load progress for the diorama's core set (flag.js sets --p, 0..1). Hidden until the
+       diorama starts loading, so the classic town's near-instant paint shows only the dots. */
+    #preloader .pl-bar {
+      width: 168px; height: 4px; border-radius: 2px; overflow: hidden;
+      background: rgba(249, 243, 230, 0.28); opacity: 0; transition: opacity 0.3s ease;
+    }
+    #preloader .pl-bar i {
+      display: block; height: 100%; width: 100%; background: #f9f3e6; border-radius: 2px;
+      transform-origin: 0 50%; transform: scaleX(var(--p, 0)); transition: transform 0.25s ease-out;
+    }
+    #preloader.loading .pl-bar { opacity: 1; }
+    .sr-status {
+      position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
+      overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+    }
     @media (max-width: 768px) { #preloader .pl-mark { font-size: 34px; } }
     @media (prefers-reduced-motion: reduce) {
       #preloader .pl-dots span { animation: none; opacity: 0.85; }
+      #preloader .pl-bar i { transition: none; }
       #preloader { transition-duration: 0.001ms; }
     }
   </style>
@@ -99,7 +122,11 @@
   <div id="preloader" aria-hidden="true">
     <div class="pl-mark">Brendan Hoss</div>
     <div class="pl-dots"><span></span><span></span><span></span></div>
+    <div class="pl-bar"><i></i></div>
   </div>
+  <!-- Load progress for assistive tech (the preloader above is decorative): main.js announces
+       "loading" and "ready" here. -->
+  <div id="load-status" class="sr-status" role="status" aria-live="polite"></div>
 
   <canvas id="scene"></canvas>
 

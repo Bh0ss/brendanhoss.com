@@ -1,0 +1,685 @@
+{
+ "version": 1,
+ "generated": "2026-10-01T02:14:26.046Z",
+ "units": "site units (1.75 per metre)",
+ "assets": [
+  {
+   "id": "buildings-matlib",
+   "pack": "core",
+   "landmark": null,
+   "tiers": {
+    "full": {
+     "url": "/assets/v1/buildings-matlib.full.glb",
+     "bytes": 1425144,
+     "tris": 6
+    },
+    "lite": {
+     "url": "/assets/v1/buildings-matlib.lite.glb",
+     "bytes": 238372,
+     "tris": 6
+    }
+   }
+  },
+  {
+   "id": "terrain-matlib",
+   "pack": "core",
+   "landmark": null,
+   "tiers": {
+    "full": {
+     "url": "/assets/v1/terrain-matlib.full.glb",
+     "bytes": 685284,
+     "tris": 8
+    },
+    "lite": {
+     "url": "/assets/v1/terrain-matlib.lite.glb",
+     "bytes": 144504,
+     "tris": 8
+    }
+   }
+  },
+  {
+   "id": "avatar",
+   "pack": "core",
+   "landmark": null,
+   "tiers": {
+    "full": {
+     "url": "/assets/v1/avatar.full.glb",
+     "bytes": 725588,
+     "tris": 15867
+    },
+    "lite": {
+     "url": "/assets/v1/avatar.lite.glb",
+     "bytes": 345444,
+     "tris": 7783
+    }
+   }
+  },
+  {
+   "id": "nature",
+   "pack": "core",
+   "landmark": null,
+   "tiers": {
+    "full": {
+     "url": "/assets/v1/nature.full.glb",
+     "bytes": 511328,
+     "tris": 11703
+    },
+    "lite": {
+     "url": "/assets/v1/nature.lite.glb",
+     "bytes": 377548,
+     "tris": 11053
+    }
+   }
+  },
+  {
+   "id": "props",
+   "pack": "core",
+   "landmark": null,
+   "tiers": {
+    "full": {
+     "url": "/assets/v1/props.full.glb",
+     "bytes": 669436,
+     "tris": 10427
+    },
+    "lite": {
+     "url": "/assets/v1/props.lite.glb",
+     "bytes": 240668,
+     "tris": 9369
+    }
+   }
+  },
+  {
+   "id": "green",
+   "pack": "core",
+   "landmark": null,
+   "tiers": {
+    "full": {
+     "url": "/assets/v1/green.full.glb",
+     "bytes": 164520,
+     "tris": 8374
+    },
+    "lite": {
+     "url": "/assets/v1/green.lite.glb",
+     "bytes": 162880,
+     "tris": 8074
+    }
+   },
+   "meta": {
+    "church": {
+     "w": 13.825,
+     "d": 25.55,
+     "h": 11.9,
+     "ridge": 16.744,
+     "top": 45.531,
+     "tris": 5808
+    },
+    "gazebo": {
+     "w": 14,
+     "d": 14,
+     "h": 6.65,
+     "top": 13.279,
+     "tris": 1880
+    },
+    "lamppost": {
+     "w": 0.875,
+     "d": 0.875,
+     "h": 6.825,
+     "tris": 182
+    },
+    "fence": {
+     "w": 4.2,
+     "d": 0.35,
+     "h": 2.1,
+     "tris": 288
+    },
+    "stonewall": {
+     "w": 5.25,
+     "d": 1.4,
+     "h": 1.488,
+     "tris": 216
+    }
+   }
+  },
+  {
+   "id": "houses",
+   "pack": "core",
+   "landmark": null,
+   "tiers": {
+    "full": {
+     "url": "/assets/v1/houses.full.glb",
+     "bytes": 570392,
+     "tris": 26222
+    },
+    "lite": {
+     "url": "/assets/v1/houses.lite.glb",
+     "bytes": 570392,
+     "tris": 26222
+    }
+   },
+   "meta": {
+    "house_colonial": {
+     "w": 14.7,
+     "d": 8.75,
+     "h": 10.588,
+     "tris": 6490
+    },
+    "house_cape": {
+     "w": 14,
+     "d": 10.5,
+     "h": 5.163,
+     "tris": 4110
+    },
+    "house_saltbox": {
+     "w": 13.3,
+     "d": 9.8,
+     "h": 10.237,
+     "tris": 3586
+    },
+    "house_farm": {
+     "w": 14,
+     "d": 13.475,
+     "h": 10.237,
+     "tris": 4854
+    },
+    "house_greek": {
+     "w": 11.2,
+     "d": 15.75,
+     "h": 10.588,
+     "tris": 7182
+    }
+   }
+  },
+  {
+   "id": "masonry-matlib",
+   "pack": "masonry",
+   "landmark": null,
+   "tiers": {
+    "full": {
+     "url": "/assets/v1/masonry-matlib.full.glb",
+     "bytes": 874748,
+     "tris": 4
+    },
+    "lite": {
+     "url": "/assets/v1/masonry-matlib.lite.glb",
+     "bytes": 162560,
+     "tris": 4
+    }
+   }
+  },
+  {
+   "id": "lm_gateway",
+   "pack": "gateway",
+   "landmark": "gateway",
+   "tiers": {
+    "full": {
+     "url": "/assets/v1/lm_gateway.full.glb",
+     "bytes": 37668,
+     "tris": 1836
+    },
+    "lite": {
+     "url": "/assets/v1/lm_gateway.lite.glb",
+     "bytes": 37372,
+     "tris": 1812
+    }
+   },
+   "meta": {
+    "lm_gateway": {
+     "w": 21.7,
+     "d": 18.2,
+     "h": 13.125,
+     "signY": 11.025,
+     "top": 14.875,
+     "tris": 1836
+    }
+   }
+  },
+  {
+   "id": "lm_uconn",
+   "pack": "uconn",
+   "landmark": "uconn",
+   "tiers": {
+    "full": {
+     "url": "/assets/v1/lm_uconn.full.glb",
+     "bytes": 142516,
+     "tris": 7534
+    },
+    "lite": {
+     "url": "/assets/v1/lm_uconn.lite.glb",
+     "bytes": 142516,
+     "tris": 7534
+    }
+   },
+   "meta": {
+    "lm_uconn": {
+     "w": 23.8,
+     "d": 20.65,
+     "h": 12.95,
+     "signY": 8.225,
+     "top": 23.447,
+     "tris": 7534
+    }
+   }
+  },
+  {
+   "id": "lm_lambda",
+   "pack": "lambda",
+   "landmark": "lambda",
+   "tiers": {
+    "full": {
+     "url": "/assets/v1/lm_lambda.full.glb",
+     "bytes": 246152,
+     "tris": 17116
+    },
+    "lite": {
+     "url": "/assets/v1/lm_lambda.lite.glb",
+     "bytes": 227788,
+     "tris": 14252
+    }
+   },
+   "meta": {
+    "lm_lambda": {
+     "w": 29.05,
+     "d": 17.85,
+     "h": 15.75,
+     "signY": 7.35,
+     "top": 32.2,
+     "tris": 17116
+    }
+   }
+  },
+  {
+   "id": "lm_story",
+   "pack": "story",
+   "landmark": "story",
+   "tiers": {
+    "full": {
+     "url": "/assets/v1/lm_story.full.glb",
+     "bytes": 14956,
+     "tris": 649
+    },
+    "lite": {
+     "url": "/assets/v1/lm_story.lite.glb",
+     "bytes": 14872,
+     "tris": 627
+    }
+   },
+   "meta": {
+    "lm_story": {
+     "w": 19.25,
+     "d": 17.675,
+     "h": 11.375,
+     "signY": 7.7,
+     "top": 18.561,
+     "tris": 649
+    }
+   }
+  },
+  {
+   "id": "lm_yale",
+   "pack": "yale",
+   "landmark": "yale",
+   "tiers": {
+    "full": {
+     "url": "/assets/v1/lm_yale.full.glb",
+     "bytes": 124700,
+     "tris": 6673
+    },
+    "lite": {
+     "url": "/assets/v1/lm_yale.lite.glb",
+     "bytes": 124700,
+     "tris": 6673
+    }
+   },
+   "meta": {
+    "lm_yale": {
+     "w": 26.25,
+     "d": 18.55,
+     "h": 13.3,
+     "signY": 8.575,
+     "top": 26.95,
+     "tris": 6673
+    }
+   }
+  },
+  {
+   "id": "lm_catalyst",
+   "pack": "catalyst",
+   "landmark": "catalyst",
+   "tiers": {
+    "full": {
+     "url": "/assets/v1/lm_catalyst.full.glb",
+     "bytes": 78512,
+     "tris": 4064
+    },
+    "lite": {
+     "url": "/assets/v1/lm_catalyst.lite.glb",
+     "bytes": 76380,
+     "tris": 3826
+    }
+   },
+   "meta": {
+    "lm_catalyst": {
+     "w": 18.2,
+     "d": 17.5,
+     "h": 12.775,
+     "signY": 8.575,
+     "top": 16.1,
+     "tris": 4064
+    }
+   }
+  },
+  {
+   "id": "office_veoci",
+   "pack": "veoci_se",
+   "landmark": "veoci_se",
+   "tiers": {
+    "full": {
+     "url": "/assets/v1/office_veoci.full.glb",
+     "bytes": 133412,
+     "tris": 7056
+    },
+    "lite": {
+     "url": "/assets/v1/office_veoci.lite.glb",
+     "bytes": 124204,
+     "tris": 5932
+    }
+   }
+  },
+  {
+   "id": "lighthouse",
+   "pack": "contact",
+   "landmark": "contact",
+   "tiers": {
+    "full": {
+     "url": "/assets/v1/lighthouse.full.glb",
+     "bytes": 37228,
+     "tris": 1600
+    },
+    "lite": {
+     "url": "/assets/v1/lighthouse.lite.glb",
+     "bytes": 37180,
+     "tris": 1596
+    }
+   }
+  },
+  {
+   "id": "dock",
+   "pack": "contact",
+   "landmark": "contact",
+   "tiers": {
+    "full": {
+     "url": "/assets/v1/dock.full.glb",
+     "bytes": 76676,
+     "tris": 4380
+    },
+    "lite": {
+     "url": "/assets/v1/dock.lite.glb",
+     "bytes": 76676,
+     "tris": 4380
+    }
+   }
+  },
+  {
+   "id": "sailboat_a",
+   "pack": "contact",
+   "landmark": "contact",
+   "tiers": {
+    "full": {
+     "url": "/assets/v1/sailboat_a.full.glb",
+     "bytes": 38672,
+     "tris": 1781
+    },
+    "lite": {
+     "url": "/assets/v1/sailboat_a.lite.glb",
+     "bytes": 38588,
+     "tris": 1779
+    }
+   }
+  },
+  {
+   "id": "sailboat_b",
+   "pack": "contact",
+   "landmark": "contact",
+   "tiers": {
+    "full": {
+     "url": "/assets/v1/sailboat_b.full.glb",
+     "bytes": 30092,
+     "tris": 1020
+    },
+    "lite": {
+     "url": "/assets/v1/sailboat_b.lite.glb",
+     "bytes": 30092,
+     "tris": 1020
+    }
+   }
+  }
+ ],
+ "files": {
+  "env": {
+   "tiers": {
+    "full": {
+     "url": "/assets/v1/env.full.hdr",
+     "bytes": 382362
+    },
+    "lite": {
+     "url": "/assets/v1/env.lite.hdr",
+     "bytes": 99061
+    }
+   }
+  },
+  "grade": {
+   "tiers": {
+    "full": {
+     "url": "/assets/v1/grade.cube",
+     "bytes": 103223
+    },
+    "lite": {
+     "url": "/assets/v1/grade.cube",
+     "bytes": 103223
+    }
+   }
+  }
+ },
+ "packs": {
+  "core": {
+   "deps": [],
+   "assets": [
+    "buildings-matlib",
+    "terrain-matlib",
+    "avatar",
+    "nature",
+    "props",
+    "green",
+    "houses"
+   ]
+  },
+  "masonry": {
+   "deps": [],
+   "assets": [
+    "masonry-matlib"
+   ]
+  },
+  "gateway": {
+   "deps": [
+    "masonry"
+   ],
+   "assets": [
+    "lm_gateway"
+   ]
+  },
+  "uconn": {
+   "deps": [
+    "masonry"
+   ],
+   "assets": [
+    "lm_uconn"
+   ]
+  },
+  "lambda": {
+   "deps": [
+    "masonry"
+   ],
+   "assets": [
+    "lm_lambda"
+   ]
+  },
+  "story": {
+   "deps": [],
+   "assets": [
+    "lm_story"
+   ]
+  },
+  "yale": {
+   "deps": [
+    "masonry"
+   ],
+   "assets": [
+    "lm_yale"
+   ]
+  },
+  "catalyst": {
+   "deps": [
+    "masonry"
+   ],
+   "assets": [
+    "lm_catalyst"
+   ]
+  },
+  "veoci_se": {
+   "deps": [],
+   "assets": [
+    "office_veoci"
+   ]
+  },
+  "contact": {
+   "deps": [],
+   "assets": [
+    "lighthouse",
+    "dock",
+    "sailboat_a",
+    "sailboat_b"
+   ]
+  }
+ },
+ "routeOrder": [
+  "gateway",
+  "uconn",
+  "lambda",
+  "story",
+  "yale",
+  "catalyst",
+  "veoci_se",
+  "contact"
+ ],
+ "totals": {
+  "coreBytes": {
+   "full": 5846989,
+   "lite": 2891804
+  },
+  "assetBytes": {
+   "full": 7682321,
+   "lite": 3984732
+  },
+  "decoderBytes": 609712,
+  "shellBytes": {
+   "html": 15336,
+   "jsCss": 995007,
+   "fonts": 77988,
+   "music": 1464260
+  },
+  "siteBytes": {
+   "full": 10234912,
+   "lite": 6537323
+  }
+ },
+ "budgets": {
+  "coreBytes": {
+   "full": 6291456,
+   "lite": 3145728
+  },
+  "totalBytes": {
+   "full": 18874368,
+   "lite": 8388608
+  },
+  "assetTris": 20000,
+  "textureMax": 2048,
+  "draws": {
+   "full": 300,
+   "lite": 150
+  }
+ },
+ "trimRows": {
+  "white": [
+   0.002,
+   0.0918
+  ],
+  "shutter": [
+   0.0957,
+   0.1543
+  ],
+  "red": [
+   0.1582,
+   0.2168
+  ],
+  "glass": [
+   0.2207,
+   0.2793
+  ],
+  "metal": [
+   0.2832,
+   0.3418
+  ],
+  "brick": [
+   0.3457,
+   0.4043
+  ],
+  "stone": [
+   0.4082,
+   0.4668
+  ],
+  "alu": [
+   0.4707,
+   0.5293
+  ],
+  "interior": [
+   0.5332,
+   0.5918
+  ],
+  "navy": [
+   0.5957,
+   0.6543
+  ],
+  "teak": [
+   0.6582,
+   0.7168
+  ],
+  "canvas": [
+   0.7207,
+   0.7793
+  ],
+  "concrete": [
+   0.7832,
+   0.8418
+  ],
+  "green": [
+   0.8457,
+   0.873
+  ],
+  "yellow": [
+   0.877,
+   0.9043
+  ],
+  "copper": [
+   0.9082,
+   0.9355
+  ],
+  "driftwood": [
+   0.9395,
+   0.9668
+  ],
+  "limestone": [
+   0.9707,
+   0.998
+  ]
+ }
+}

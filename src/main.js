@@ -1,6 +1,6 @@
 import './style.css';
-import { Town } from './town/Town.js';
 import { track } from './analytics.js';
+import { LOOK, consumeFallbackReload } from './diorama/flag.js';
 import { parsePath, pathForLandmark, RESUME_PATH, HOME_PATH } from './routes.js';
 import { createResumeView, isResumeOpen, syncResumeTabbable, RESUME_EVENT } from './resume-view.js';
 
@@ -41,6 +41,7 @@ function syncUrl() {
   const url = path + location.search + location.hash;
   const fromHome = location.pathname === HOME_PATH;
   if (path === HOME_PATH) {
+    if (ignorePop) return;   // our back() to home is already in flight (a second would leave the site)
     if (history.state && history.state.bhFromHome) { ignorePop = true; history.back(); }
     else history.replaceState(null, '', url);
   } else if (fromHome) {
@@ -95,6 +96,11 @@ addEventListener('popstate', () => {
 // (/YALE/ → /yale, /resume// → /resume, /veoci_se → /veoci); unknown paths go
 // to /. Analytics keep the path as it was actually requested.
 let pendingLandmark = null;
+// Our own reload (diorama -> classic fallback, or a context-restore rebuild; flag.js) replays the
+// landing: don't report it twice. The inline <head> script already sent the GA config without a
+// page_view; deep_link_open is skipped here and the landing card's landmark_view in ui.js.
+const replay = consumeFallbackReload();
+const trackLanding = (name, params) => { if (!replay) track(name, params); };
 const landingPath = location.pathname;
 const landing = parsePath(landingPath);
 const canonicalPath =
@@ -108,10 +114,10 @@ if (landing.type === 'resume') {
   // analytics). If it didn't — the two route checks drifted — open it here so
   // the page and the deep_link_open event always agree.
   if (!resumeView.adoptInitial()) resumeView.open('deeplink');
-  track('deep_link_open', { target: 'resume', path: landingPath });
+  trackLanding('deep_link_open', { target: 'resume', path: landingPath });
 } else if (landing.type === 'landmark') {
   pendingLandmark = landing.id; // opened once the town is up (see openPendingLandmark)
-  track('deep_link_open', { target: landing.id, path: landingPath });
+  trackLanding('deep_link_open', { target: landing.id, path: landingPath });
 }
 
 function openPendingLandmark() {
@@ -148,23 +154,40 @@ const canvas = document.getElementById('scene');
 // actually the rendered world. The transition (0.55s in index.html) makes fast
 // loads fade cleanly rather than flashing.
 const preloader = document.getElementById('preloader');
+// The preloader is aria-hidden (decorative); this polite live region outside it tells screen-reader
+// users the town is loading, and when it's ready (index.html #load-status).
+const loadStatus = document.getElementById('load-status');
+const announce = (msg) => { if (loadStatus) loadStatus.textContent = msg; };
 let preloaderHidden = false;
-function hidePreloader() {
+function hidePreloader(msg = 'The town is ready.') {
   if (preloaderHidden) return;
   preloaderHidden = true;
   if (preloader) preloader.classList.add('hidden');
+  announce(msg);
 }
+const NO_TOWN = 'The 3D town is unavailable here. Showing the résumé.';
+
+// The 3D town is its own chunk (three.js, the classic town, and the diorama boot), loaded with a
+// dynamic import: a /resume landing downloads none of it until the reader leaves the page. On any
+// other landing the import starts at once, in parallel with the fonts.
+let townModule = null;
+const loadTownModule = () => (townModule ||= import('./town/Town.js'));
+if (!(landing.type === 'resume' && isResumeOpen())) loadTownModule();
 
 let townRequested = false;
 function buildTown() {
   if (townRequested) return;
   townRequested = true;
-  setTimeout(hidePreloader, 6000); // safety net: never strand the loader on-screen
-  document.fonts.ready.then(() => {
+  announce('Loading the town…');
+  // Safety net: never strand the loader on-screen. The diorama holds it while its core set loads
+  // (with real progress), so its net is longer; the classic town paints almost at once.
+  setTimeout(hidePreloader, LOOK === 'diorama' ? 20000 : 6000);
+  Promise.all([loadTownModule(), document.fonts.ready]).then(([{ Town }]) => {
     try {
       town = new Town(canvas, { mobile, reducedMotion });
       town.onFirstFrame = hidePreloader;
       town.ui.onChange = syncUrl;
+      if (replay && landing.type === 'landmark') town.ui.replayLandmark = landing.id;
       // If reveal already ran (e.g. the hard fallback fired before fonts
       // resolved, or the town was deferred), start the loop now — reveal's
       // `if (town)` would have skipped it.
@@ -173,9 +196,16 @@ function buildTown() {
       console.error('WebGL init failed:', err);
       document.body.classList.add('no-webgl'); // CSS hides the preloader on this path
       syncResumeTabbable(); // the résumé is now the visible page
-      hidePreloader();
+      hidePreloader(NO_TOWN);
       openPendingLandmark();
     }
+  }, (err) => {
+    // the town chunk itself failed to download: the résumé is the page
+    console.error('Town failed to load:', err);
+    document.body.classList.add('no-webgl');
+    syncResumeTabbable();
+    hidePreloader(NO_TOWN);
+    openPendingLandmark();
   });
 }
 
